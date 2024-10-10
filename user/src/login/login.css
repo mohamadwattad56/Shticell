@@ -1,0 +1,34 @@
+/* Styling for error label */
+.error-label {
+    -fx-text-fill: red;
+    -fx-font-weight: bold;
+    -fx-font-size: 12px;
+}
+
+/* Main action buttons (login, quit) styling */
+.main-action-button {
+    -fx-text-fill: white;
+    -fx-font-size: 20px;
+    -fx-background-color: linear-gradient(to bottom, #4caf50, #388e3c);
+    -fx-font-weight: bold;
+    -fx-background-radius: 8px;
+    -fx-border-radius: 8px;
+    -fx-padding: 8px 20px;
+}
+
+/* Quit button specific style */
+#quitButton {
+    -fx-text-fill: white;
+    -fx-background-color: linear-gradient(to bottom, #f44336, #d32f2f);
+}
+
+/* When the login button is hovered over */
+.main-action-button:hover {
+    -fx-background-color: linear-gradient(to bottom, #66bb6a, #43a047);
+    -fx-cursor: hand;
+}
+
+/* When the quit button is hovered */
+#quitButton:hover {
+    -fx-background-color: linear-gradient(to bottom, #e57373, #c62828);
+}

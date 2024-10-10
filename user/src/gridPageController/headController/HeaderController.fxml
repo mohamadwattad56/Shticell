@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.String?>
+<?import javafx.collections.FXCollections?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox fx:id="header" alignment="TOP_CENTER" prefHeight="88.0" prefWidth="600.0" spacing="10.0" stylesheets="@../../resources/styles.css" xmlns="http://javafx.com/javafx/23" xmlns:fx="http://javafx.com/fxml/1" fx:controller="gridPageController.headController.HeadController">
+   <children>
+      <Label styleClass="main-title" text="Shticell" />
+      <HBox spacing="10.0" HBox.hgrow="ALWAYS">
+         <children>
+           <!--> <Button fx:id="loadFileButton" text="Load File Button" styleClass="custom-button"  style="-fx-padding: 3px 8px;"/>
+            <TextField fx:id="filePathField" HBox.hgrow="ALWAYS" />
+            <ProgressBar fx:id="progressBar" prefWidth="200" progress="0.0" visible="false" /><!-->
+            <ComboBox fx:id="skinSelector" prefHeight="41.0" prefWidth="99.0" promptText="Select Skin">
+               <items>
+                  <FXCollections fx:factory="observableArrayList">
+                     <String fx:value="Light" />
+                     <String fx:value="Dark" />
+                     <String fx:value="Colorful" />
+                  </FXCollections>
+               </items>
+            </ComboBox>
+            <Button fx:id="versionButton" mnemonicParsing="false" prefHeight="10.0" prefWidth="184.0" text="New Version Available" visible="false" />
+         </children>
+      </HBox>
+      <HBox spacing="10.0" HBox.hgrow="ALWAYS">
+         <children>
+            <TextField fx:id="selectedCellIdField" text="Selected Cell ID" />
+            <TextField fx:id="originalCellValueField" text="Original Cell value" />
+            <Button fx:id="updateValueButton" style="-fx-padding: 3px 8px;" styleClass="custom-button" text="Update value" />
+            <Label fx:id="lastUpdateCellVersionField" styleClass="custom-label" text="Last update cell version" />
+            <Button fx:id="versionSelectorButton" style="-fx-padding: 3px 8px;" styleClass="custom-button" text="Version Selector" />
+         </children>
+      </HBox>
+   </children>
+</VBox>

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.control.ScrollPane?>
+
+
+
+
+<ScrollPane fitToWidth="true" fitToHeight="true" pannable="true"
+            xmlns="http://javafx.com/javafx/22"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="dashboard.mainDashboardController.MainDashboardController">
+
+    <BorderPane fx:id="mainLayout" prefHeight="600.0" prefWidth="800.0">
+        <top>
+            <!-- The header will be manually loaded in the controller -->
+        </top>
+        <center>
+            <HBox fx:id="centerHBox" spacing="10.0" HBox.hgrow="ALWAYS">
+                <!-- The tables and commands will be manually loaded in the controller -->
+            </HBox>
+        </center>
+    </BorderPane>
+</ScrollPane>
