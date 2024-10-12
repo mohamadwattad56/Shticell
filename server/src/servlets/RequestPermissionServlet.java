@@ -1,7 +1,6 @@
 package servlets;
 
 import dto.PermissionRequestDTO;
-import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -9,6 +8,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import Spreadsheet.impl.SpreadsheetManager;
 import java.io.IOException;
 import java.util.Map;
+
 
 @WebServlet("/requestPermission")
 public class RequestPermissionServlet extends HttpServlet {
@@ -36,7 +36,16 @@ public class RequestPermissionServlet extends HttpServlet {
             return;
         }
 
-        // Create a new permission request and add it to the sheet manager
+        // Check if the user already has permission
+        boolean alreadyHasPermission = spreadsheetManager.getProcessedRequests().stream()
+                .anyMatch(req -> req.getUsername().equals(username) && req.getPermissionType().equalsIgnoreCase(permissionType));
+
+        if (alreadyHasPermission) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "User already has the requested permission.");
+            return;
+        }
+
+        // Create a new pending permission request and add it to the spreadsheet manager
         PermissionRequestDTO requestDTO = new PermissionRequestDTO(username, permissionType, false, spreadsheetManager.getSpreadsheetName());
         spreadsheetManager.addPendingRequest(requestDTO);
 

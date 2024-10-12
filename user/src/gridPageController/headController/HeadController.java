@@ -67,9 +67,6 @@
         @FXML
         private VBox header;
 
-        @FXML
-        private ProgressBar progressBar;
-
 
         @FXML
         private void initialize() {
@@ -90,61 +87,11 @@
         }
 
 
-      /*  private void loadFile() {
-            // Create a FileChooser to open a file dialog
-            FileChooser fileChooser = new FileChooser();
-            fileChooser.setTitle("Open Spreadsheet File");
-            fileChooser.getExtensionFilters().addAll(
-                    new FileChooser.ExtensionFilter("XML Files", "*.xml"),
-                    new FileChooser.ExtensionFilter("All Files", "*.*")
-            );
 
-            // Show the file chooser dialog
-            Stage stage = (Stage) loadFileButton.getScene().getWindow();
-            File selectedFile = fileChooser.showOpenDialog(stage);
-
-            if (selectedFile != null) {
-                // Display the selected file path in the TextField
-                filePathField.setText(selectedFile.getAbsolutePath());
-
-                // Reset progress bar to be visible (do not manually set progress)
-                progressBar.setVisible(true);
-
-                // Create a Task for file loading
-                Task<Void> loadFileTask = new Task<>() {
-                    @Override
-                    protected Void call() throws Exception {
-                        // Simulate loading delay
-                        Thread.sleep(2000);
-
-                        // Update the progress (to 100%)
-                        updateProgress(1, 1);
-
-                        // Load the spreadsheet into the application controller
-                        try {
-                            appController.loadSpreadsheet(selectedFile.getAbsolutePath());
-                        }catch (Exception e) {
-                            appController.showError("",e.getMessage());
-                        }
-                        return null;
-                    }
-                };
-
-                // Bind the progress bar to the task progress
-                progressBar.progressProperty().bind(loadFileTask.progressProperty());
-
-                // When the task is complete, hide the progress bar
-                loadFileTask.setOnSucceeded(event -> progressBar.setVisible(false));
-                loadFileTask.setOnFailed(event -> {
-                    progressBar.setVisible(false);
-                    appController.showError("File Load Error", "An error occurred during file loading.");
-                });
-
-                // Run the task on a background thread
-                new Thread(loadFileTask).start();
-            }
+        public Button getUpdateValueButton() {
+            return updateValueButton;
         }
-*/
+
         // Example method to be called when the "Update value" Button is clicked
         private void handleUpdateValue() throws UnsupportedEncodingException {
             String cellIdentifier = selectedCellIdField.getText();
@@ -174,74 +121,21 @@
             return lastUpdateCellVersionField;
         }
 
-        /*@FXML
-        private void handleVersionSelector() {
-            // Create a new Stage (popup window) for selecting the version
-            Stage versionPopup = new Stage();
-            versionPopup.setTitle("Select Version");
+        public void disableEditing() {
 
-            // VBox layout with padding and spacing
-            VBox popupLayout = new VBox(10);
-            popupLayout.setPadding(new Insets(20));
-
-            // Instruction Label
-            Label instructionLabel = new Label("Select a version to view:");
-            instructionLabel.setStyle("-fx-font-size: 14px;");
-
-            // Create a ComboBox for selecting the version
-            ComboBox<String> versionComboBox = new ComboBox<>();
-            versionComboBox.setPromptText("Select version");
-
-            // Retrieve version history from the SpreadsheetManager
-            List<String> versionHistory = appController.getSpreadsheetController().getSpreadsheet().getVersionHistory();
-
-            // Populate the ComboBox with version history
-            versionComboBox.getItems().addAll(versionHistory);
-
-            // OK button to load the selected version
-            Button okButton = new Button("Load Version");
-            okButton.setDisable(true); // Initially disable the button
-            okButton.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white;");
-
-            // Enable the OK button once a version is selected
-            versionComboBox.setOnAction(event -> {
-                if (versionComboBox.getValue() != null) {
-                    okButton.setDisable(false);
+            Platform.runLater(() -> {
+                if (originalCellValueField != null && updateValueButton != null) {
+                    System.out.println("Disabling originalCellValueField and updateValueButton");
+                    originalCellValueField.setEditable(false);  // Make the field non-editable but still visible
+                    updateValueButton.setDisable(true);  // Disable the update button
+                } else {
+                    System.out.println("Fields are null, check initialization!");
                 }
             });
+        }
 
-            // Handle loading and displaying the selected version
-            okButton.setOnAction(event -> {
-                String selectedVersionText = versionComboBox.getValue();
-                int versionNumber = extractVersionNumber(selectedVersionText);
 
-                // Retrieve the version details from the SpreadsheetManager
-                VersionDTO selectedVersion = appController.getSpreadsheetController().getSpreadsheet().getVersionDTO(versionNumber);
 
-                // Display the selected version in a read-only popup
-                showVersionSpreadsheet(selectedVersion);
-
-                // Close the version selector popup after loading
-                versionPopup.close();
-            });
-
-            // Cancel button to close the popup
-            Button cancelButton = new Button("Cancel");
-            cancelButton.setStyle("-fx-background-color: #f44336; -fx-text-fill: white;");
-            cancelButton.setOnAction(event -> versionPopup.close());
-
-            // HBox for buttons
-            HBox buttonBox = new HBox(10, cancelButton, okButton);
-            buttonBox.setAlignment(Pos.CENTER_RIGHT);
-
-            // Add components to the layout
-            popupLayout.getChildren().addAll(instructionLabel, versionComboBox, buttonBox);
-
-            // Set the layout on the scene and show the popup
-            Scene popupScene = new Scene(popupLayout, 300, 200);
-            versionPopup.setScene(popupScene);
-            versionPopup.showAndWait();
-        }*/
 
 
 
@@ -373,7 +267,6 @@
         }
 
 
-        // In HeadController.java
         public void showNewVersionIndicator(int latestVersion) {
             // Make the button visible
             versionButton.setVisible(true);  // Show the button
@@ -403,17 +296,35 @@
                     Stage currentStage = (Stage) versionButton.getScene().getWindow();
                     currentStage.close();
 
-                    // Reload the sheet with the latest version
-                    MainDashboardController mainDashboardController = appController.getMainDashboardController();
-                    mainDashboardController.loadSheetFromServer(
-                            this.appController.getSpreadsheetController().getSpreadsheet().getSpreadsheetDTO().getSheetName(),
-                            this.appController.getSpreadsheetController().getSpreadsheet().getUploaderName()
-                    );
-                } catch (UnsupportedEncodingException e) {
+                    // Fetch the user's permission for the sheet before reloading
+                    String sheetName = this.appController.getSpreadsheetController().getSpreadsheet().getSpreadsheetDTO().getSheetName();
+                    String uploaderName = this.appController.getSpreadsheetController().getSpreadsheet().getUploaderName();
+                    String currentUsername = this.appController.getMainDashboardController().getDashboardHeaderController().getDashUserName();
+
+                    // Fetch user permission
+                    appController.getMainDashboardController().getDashboardCommandsController().fetchUserPermission(sheetName, currentUsername, permission -> {
+                        if (permission.equals("NONE")) {
+                            this.appController.showError("No permissions.","You do not have permission to view this sheet.");;
+                        } else {
+                            // Reload the sheet with the latest version based on permission
+                            try {
+                                appController.getMainDashboardController().loadSheetFromServer(sheetName, uploaderName, permission);
+                            } catch (UnsupportedEncodingException e) {
+                                e.printStackTrace();
+                            }
+
+                            // If the user is a reader, disable editing features
+                            if (permission.equals("READER")) {
+                                appController.getMainDashboardController().disableEditingFeatures();
+                            }
+                        }
+                    });
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
             });
         }
+
 
 
 

@@ -38,14 +38,16 @@ public class HttpClientUtil {
     }
 
     // New method to upload files asynchronously
-    public static void uploadFileAsync(String url, File file, Callback callback) {
+    public static void uploadFileAsync(String url, File file, String filePath, String uploaderName, Callback callback) {
         // Create a request body with file and media type
         RequestBody fileBody = RequestBody.create(file, MediaType.parse("application/xml"));
 
-        // Create a multipart body (in case you want to send additional form fields along with the file)
+        // Create a multipart body, including filePath and uploaderName
         MultipartBody requestBody = new MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
                 .addFormDataPart("file", file.getName(), fileBody)
+                .addFormDataPart("filePath", filePath)  // Include the file path
+                .addFormDataPart("uploaderName", uploaderName)  // Include the uploader's name
                 .build();
 
         // Create a POST request
@@ -55,7 +57,8 @@ public class HttpClientUtil {
                 .build();
 
         // Send the request asynchronously
-        Call call = HttpClientUtil.HTTP_CLIENT.newCall(request);
+        Call call = HTTP_CLIENT.newCall(request);
         call.enqueue(callback);
     }
+
 }

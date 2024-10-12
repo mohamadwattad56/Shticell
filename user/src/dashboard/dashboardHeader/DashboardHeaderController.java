@@ -5,14 +5,14 @@ import com.google.gson.reflect.TypeToken;
 import dashboard.dashboardTables.DashboardTablesController;
 import dashboard.mainDashboardController.MainDashboardController;
 import dto.SpreadsheetManagerDTO;
+import httputils.HttpClientUtil;
+import javafx.animation.FadeTransition;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.ProgressBar;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
+import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.util.Duration;
 import okhttp3.*;
@@ -33,8 +33,8 @@ public class DashboardHeaderController {
     @FXML
     private TextField filePathField;
 
-    @FXML
-    private ProgressBar progressBar;
+ /*   @FXML
+    private ProgressBar progressBar;*/
 
     @FXML
     private Label dashUserName;
@@ -47,7 +47,7 @@ public class DashboardHeaderController {
 
     public void initialize() {
         loadFileButton.setOnAction(event -> handleLoadFile());
-        progressBar.setVisible(false);
+       // progressBar.setVisible(false);
 
         // Add Timeline for polling every 2 seconds
         startFetchingFiles(); // Start fetching the uploaded files every 2 seconds
@@ -132,56 +132,112 @@ public class DashboardHeaderController {
     }
 
     private void uploadFileToServer(File file) {
-        progressBar.setVisible(true);
-        progressBar.setProgress(0.0);
+     //   progressBar.setVisible(true);
+       // progressBar.setProgress(0.0);
 
-        OkHttpClient client = new OkHttpClient();
+        String uploaderName = dashUserName.getText();  // The uploader's name
+        String filePath = file.getAbsolutePath();  // Get the absolute file path
+        String url = UPLOAD_URL;  // The server upload URL
 
-        RequestBody requestBody = new MultipartBody.Builder()
-                .setType(MultipartBody.FORM)
-                .addFormDataPart("file", file.getName(), RequestBody.create(file, MediaType.parse("application/xml")))
-                .addFormDataPart("filePath", file.getAbsolutePath())  // Add the file path as form data
-                .addFormDataPart("uploaderName", dashUserName.getText()) // Pass the uploader's name to the server
-                .build();
-
-        Request request = new Request.Builder()
-                .url(UPLOAD_URL)
-                .post(requestBody)
-                .build();
-
-        client.newCall(request).enqueue(new Callback() {
+        // Use the new uploadFileAsync method
+        HttpClientUtil.uploadFileAsync(url, file, filePath, uploaderName, new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
                 Platform.runLater(() -> {
-                    progressBar.setProgress(0.0);
+                  //  progressBar.setProgress(0.0);
                     System.out.println("Upload failed: " + e.getMessage());
+                    // Show error message to the user (you can replace this with a proper UI message)
+                    showError("Upload Error", "Failed to upload the file: " + e.getMessage());
                 });
             }
 
             @Override
             public void onResponse(Call call, Response response) throws IOException {
                 Platform.runLater(() -> {
-                    progressBar.setProgress(1.0);
+                //    progressBar.setProgress(1.0);
                     if (response.isSuccessful()) {
                         System.out.println("File uploaded successfully!");
+                        showSuccessHint("File uploaded successfully!");
 
                         if (mainDashboardController != null) {
                             fetchUploadedFiles();  // Fetch updated files after successful upload
                         }
                     } else {
-                        System.out.println("Upload failed: " + response.message());
-                        String responseBody = null;
+                        // Extract the error message from the response body
+                        String responseBody;
                         try {
                             responseBody = response.body().string();
+                            String errorMessage = extractErrorMessage(responseBody);  // Extract the message
+                            System.out.println("Upload failed: " + errorMessage);
+                            showError("Upload Error", "Failed to upload the file: " + errorMessage);
                         } catch (IOException e) {
-                            throw new RuntimeException(e);
+                            System.out.println("Error reading response body: " + e.getMessage());
+                            showError("Upload Error", "Error reading server response.");
                         }
-                        System.out.println("Response body: " + responseBody);
                     }
                 });
             }
+
         });
     }
+
+    private String extractErrorMessage(String htmlResponse) {
+        String errorMessage = "Unknown error occurred";
+
+        // Extract the message between <p><b>Message</b> and </p>
+        String messageTag = "<p><b>Message</b>";
+        int messageIndex = htmlResponse.indexOf(messageTag);
+        if (messageIndex != -1) {
+            int startIndex = htmlResponse.indexOf("</b>", messageIndex) + 4;
+            int endIndex = htmlResponse.indexOf("</p>", startIndex);
+            if (startIndex != -1 && endIndex != -1) {
+                errorMessage = htmlResponse.substring(startIndex, endIndex).trim();
+            }
+        }
+
+        return errorMessage;
+    }
+
+
+    public void showError(String title, String message) {
+        // Display an error message in the UI (e.g., using an alert dialog)
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle(title);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+
+    private void showSuccessHint(String message) {
+        System.out.println("Attempting to show success message: " + message);  // Debugging line
+
+        // Create the label with the success message
+        Label successLabel = new Label(message);
+        successLabel.setStyle("-fx-background-color: green; -fx-text-fill: white; -fx-padding: 10;");
+        successLabel.setVisible(true);
+
+        VBox header = (VBox) this.mainDashboardController.getMainLayout().getTop();
+        // Add the label to the top of the main layout (or centerHBox, adjust as needed)
+        this.mainDashboardController.getMainLayout().setTop(successLabel);
+
+        // Fade the label out after a few seconds
+        FadeTransition fadeTransition = new FadeTransition(Duration.seconds(3), successLabel);
+        fadeTransition.setFromValue(1.0);
+        fadeTransition.setToValue(0.0);
+        fadeTransition.setOnFinished(event -> {
+            successLabel.setVisible(false);
+            this.mainDashboardController.getMainLayout().setTop(header); // Remove the label after fading out
+        });
+
+        fadeTransition.play();
+
+        System.out.println("Success message added to the UI");  // Debugging line
+    }
+
+
+
+
+
+
 
 
 

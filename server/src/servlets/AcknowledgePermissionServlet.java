@@ -1,6 +1,5 @@
 package servlets;
 
-
 import dto.PermissionRequestDTO;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -36,27 +35,21 @@ public class AcknowledgePermissionServlet extends HttpServlet {
             return;
         }
 
-        // Grant or deny the permission based on the decision
         if ("approve".equalsIgnoreCase(decision)) {
-            // Assuming you store the permission type in pending requests
             PermissionRequestDTO requestDTO = spreadsheetManager.getPendingRequests().stream()
                     .filter(req -> req.getUsername().equals(username))
                     .findFirst()
                     .orElse(null);
 
             if (requestDTO != null) {
-                // Here, use the fully qualified name for Permission enum
                 SpreadsheetManager.Permission permission = SpreadsheetManager.Permission.valueOf(requestDTO.getPermissionType().toUpperCase());
                 spreadsheetManager.approveRequest(username, permission);
             }
-        } else {
-            // Simply remove the pending request without granting permission
-            spreadsheetManager.getPendingRequests().removeIf(req -> req.getUsername().equals(username));
+        } else if ("deny".equalsIgnoreCase(decision)) {
+            spreadsheetManager.denyRequest(username);
         }
 
         response.setStatus(HttpServletResponse.SC_OK);
         response.getWriter().write("Permission " + decision + " successfully.");
     }
 }
-
-

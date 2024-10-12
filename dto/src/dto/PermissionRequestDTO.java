@@ -3,8 +3,13 @@ package dto;
 public class PermissionRequestDTO {
     private String username;
     private String permissionType;
-    private boolean isApproved;
-    private String sheetName;  // Add this field
+    private boolean isApproved; ///TODO : Change to enum pending/approved/denied
+    private final String sheetName;
+
+    public enum RequestStatus {
+        PENDING, APPROVED,DENIED
+    }
+
 
     public PermissionRequestDTO(String username, String permissionType, boolean isApproved, String sheetName) {
         this.username = username;

@@ -87,9 +87,9 @@ public class DashboardTablesController {
 
     // Data class for tableView2 (permissions)
     public static class PermissionRowData {
-        private final String userName;
-        private final String permissionType;
-        private final String status;
+        private String userName;
+        private String permissionType;
+        private String status;
 
         public PermissionRowData(String userName, String permissionType, String status) {
             this.userName = userName;
@@ -105,10 +105,19 @@ public class DashboardTablesController {
             return permissionType;
         }
 
+        public void setPermissionType(String permissionType) {
+            this.permissionType = permissionType;
+        }
+
         public String getStatus() {
             return status;
         }
+
+        public void setStatus(String status) {
+            this.status = status;
+        }
     }
+
 
     // Update the columns in DashboardTablesController for tableView1
     @FXML
@@ -133,7 +142,7 @@ public class DashboardTablesController {
             if (newSelection != null) {
                 String selectedSheetName = newSelection.getSheetName();
                 try {
-                    mainDashboardController.handleSheetSelection(selectedSheetName);
+                    mainDashboardController.handleSheetSelection(selectedSheetName, newSelection.getUploader());
                 } catch (UnsupportedEncodingException e) {
                     throw new RuntimeException(e);
                 }
@@ -167,6 +176,10 @@ public class DashboardTablesController {
     }
 
 
+    public TableView<PermissionRowData> getTableView2()
+    {
+        return tableView2;
+    }
     // Method to select a sheet by its name
     public void selectSheetByName(String sheetName) {
         for (SheetRowData row : tableView1.getItems()) {

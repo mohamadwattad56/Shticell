@@ -45,25 +45,38 @@ public class FileUploadServlet extends HttpServlet {
 
             // Load the spreadsheet using the SpreadsheetManager class
             SpreadsheetManager spreadsheetManager = new SpreadsheetManager();
-            spreadsheetManager.loadSpreadsheet(filePath);  // Load spreadsheet from file path
+            try {
+                // Validate and load the spreadsheet (checks from Stage 1 and 2 happen here)
+                spreadsheetManager.loadSpreadsheet(filePath);
+                spreadsheetManager.initializeOwner(uploaderName);
+                // Check for unique sheet name
+                String sheetName = spreadsheetManager.getSpreadsheetName();
+                if (spreadsheetManagerMap.containsKey(sheetName)) {
+                    // If sheet name already exists, send an error message
+                    response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Sheet name '" + sheetName + "' already exists. Please choose a unique sheet.");
+                    return;
+                }
 
-            // Store the SpreadsheetManager in the global map
-            String sheetName = spreadsheetManager.getSpreadsheetName();
-            spreadsheetManagerMap.put(sheetName, spreadsheetManager);
-            getServletContext().setAttribute("spreadsheetManagerMap", spreadsheetManagerMap);
+                // Store the SpreadsheetManager in the global map
+                spreadsheetManagerMap.put(sheetName, spreadsheetManager);
+                getServletContext().setAttribute("spreadsheetManagerMap", spreadsheetManagerMap);
 
-            // Store the uploader name in the uploaderMap
-            uploaderMap.put(sheetName, uploaderName);
-            getServletContext().setAttribute("uploaderMap", uploaderMap);
+                // Store the uploader name in the uploaderMap
+                uploaderMap.put(sheetName, uploaderName);
+                getServletContext().setAttribute("uploaderMap", uploaderMap);
 
-            // Convert the SpreadsheetManager to DTO for easier transmission
-            SpreadsheetManagerDTO spreadsheetManagerDTO = spreadsheetManager.toDTO(uploaderName);
+                // Convert the SpreadsheetManager to DTO for easier transmission
+                SpreadsheetManagerDTO spreadsheetManagerDTO = spreadsheetManager.toDTO(uploaderName);
 
-            // Respond with success and return the DTO (or just confirmation)
-            response.setStatus(HttpServletResponse.SC_OK);
-            response.getWriter().write("File uploaded successfully with sheet name: " + spreadsheetManagerDTO.getSpreadsheetDTO().getSheetName());
-
+                // Respond with success and return the DTO (or just confirmation)
+                response.setStatus(HttpServletResponse.SC_OK);
+                response.getWriter().write("File uploaded successfully with sheet name: " + spreadsheetManagerDTO.getSpreadsheetDTO().getSheetName());
+            } catch (IllegalArgumentException e) {
+                // Handle validation exceptions from the loadSpreadsheet method
+                response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Error in uploaded file: " + e.getMessage());
+            }
         } catch (Exception e) {
+            // Handle any other exceptions
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Error processing file: " + e.getMessage());
         }
     }
@@ -74,4 +87,5 @@ public class FileUploadServlet extends HttpServlet {
         processRequest(request, response);
     }
 }
+
 

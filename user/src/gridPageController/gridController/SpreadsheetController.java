@@ -73,7 +73,7 @@ public class SpreadsheetController implements Serializable {
         // Add more as needed
     }
 
-    public void loadSpreadsheetFromDTO(SpreadsheetManagerDTO spreadsheetDTO) {
+    public void loadSpreadsheetFromDTO(SpreadsheetManagerDTO spreadsheetDTO, String userPermission) {
         Platform.runLater(() -> {
             try {
                 System.out.println("Started Platform.runLater");
@@ -148,7 +148,7 @@ public class SpreadsheetController implements Serializable {
                             fadeIn.play();
 
                             // Handle cell click (if needed)
-                            cell.setOnMouseClicked(event -> handleCellClick(cellIdentifier));
+                            cell.setOnMouseClicked(event -> handleCellClick(cellIdentifier, userPermission));
 
                             // Add the cell to the grid
                             spreadsheetGrid.add(cell, col, row);
@@ -342,7 +342,7 @@ public class SpreadsheetController implements Serializable {
         }
     }
 
-    private void handleCellClick(String cellIdentifier) {
+    private void handleCellClick(String cellIdentifier, String userPermission) {
         // First, clear all existing highlights except for the first column and row
         for (Node node : spreadsheetGrid.getChildren()) {
             if (GridPane.getColumnIndex(node) != null && GridPane.getRowIndex(node) != null) {
@@ -360,14 +360,11 @@ public class SpreadsheetController implements Serializable {
 
                     // Only change the cell if it has a white background and black text
                     if ((backgroundColor.equals("white") || backgroundColor.equals("#FFFFFF")) &&
-                            (textColor.equals("black") || textColor.equals("#000000"))) {                        // Apply the current skin style to the cell
+                            (textColor.equals("black") || textColor.equals("#000000"))) {
                         node.getStyleClass().clear();
                         node.getStyleClass().add(cellClass);
 
                         // Re-apply borders and text color based on the current skin
-                        String textColorCSS = cellClass.equals("dark-cell") ? "#ffffff" : "#000000";  // Use proper CSS hex codes for colors
-                        String borderColorCSS = "#000000";  // Always black border
-                       // node.setStyle("-fx-text-fill: " + textColorCSS + "; -fx-border-color: " + borderColorCSS + ";");
                         node.setStyle("-fx-text-fill: " + (cellClass.equals("dark-cell") ? "#ffffff" : "#000000") + "; -fx-border-color: " + (cellClass.equals("dark-cell") ? "#ffffff" : "#000000") + ";");
                     } else {
                         node.getStyleClass().clear();
@@ -379,8 +376,6 @@ public class SpreadsheetController implements Serializable {
                 }
             }
         }
-
-
 
         // Highlight dependencies in light blue
         List<String> dependencies = spreadsheetManagerDTO.getCellDTO(cellIdentifier).getDependencies();
@@ -406,13 +401,22 @@ public class SpreadsheetController implements Serializable {
                 originalCellValueField.setText(sourceValue.equals("EMPTY") ? "" : sourceValue);
                 lastUpdateCellVersionField.setText("Last update cell version: " + String.valueOf(lastModifiedVersion));
 
-                // Call the function input popup instead of letting the user type
-                originalCellValueField.setOnMouseClicked(event -> {
-                    showFunctionInputPopup(cellIdentifier, originalCellValueField);
-                });
+                // Check the user's permission before showing the popup
+                if (!userPermission.equals("READER")) {
+                    // Call the function input popup for users with WRITER or OWNER permissions
+                    originalCellValueField.setOnMouseClicked(event -> {
+                        showFunctionInputPopup(cellIdentifier, originalCellValueField);
+                    });
+                } else {
+                    // For READER permission, disable the popup functionality
+                    originalCellValueField.setOnMouseClicked(event -> {
+                        event.consume();  // Consume the event so nothing happens
+                    });
+                }
             }
         }
     }
+
 
 
 
@@ -1466,6 +1470,18 @@ public class SpreadsheetController implements Serializable {
             // Not a number, return the value as is
             return value;
         }
+    }
+
+
+    public void disableEditing() {
+        // Disable grid editing but leave header editable for non-READERS
+        for (Node node : spreadsheetGrid.getChildren()) {
+            if (node instanceof TextField || node instanceof Button || node instanceof Label) {
+                node.setDisable(true);  // Disable text fields and buttons for grid editing
+            }
+        }
+
+
     }
 
 }

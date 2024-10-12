@@ -12,8 +12,8 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-@WebServlet("/getPermissionRequests")
-public class GetPermissionRequestsServlet extends HttpServlet {
+@WebServlet("/getAllPermissions")
+public class GetAllPermissionsServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -25,7 +25,7 @@ public class GetPermissionRequestsServlet extends HttpServlet {
             return;
         }
 
-        // Retrieve the spreadsheet manager
+        // Retrieve the spreadsheet manager map
         Map<String, SpreadsheetManager> spreadsheetManagerMap =
                 (Map<String, SpreadsheetManager>) getServletContext().getAttribute("spreadsheetManagerMap");
 
@@ -36,12 +36,13 @@ public class GetPermissionRequestsServlet extends HttpServlet {
             return;
         }
 
-        // Get the pending requests from the spreadsheet manager
-        List<PermissionRequestDTO> pendingRequests = spreadsheetManager.getPendingRequests();
+        // Get all permissions for the sheet (including the owner, approved, and pending requests)
+        List<PermissionRequestDTO> allPermissions = spreadsheetManager.getProcessedRequests();  // Add this method in SpreadsheetManager
+        allPermissions.addAll(spreadsheetManager.getPendingRequests());
 
         // Send the list as a JSON response
         Gson gson = new Gson();
-        String jsonResponse = gson.toJson(pendingRequests);
+        String jsonResponse = gson.toJson(allPermissions);
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
         response.getWriter().write(jsonResponse);

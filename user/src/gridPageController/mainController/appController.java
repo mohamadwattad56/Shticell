@@ -96,13 +96,6 @@ public class appController {
         spreadsheetController.setMainController(this);
     }
 
-/*    public void loadSpreadsheet(String filePath) {
-        try {
-            spreadsheetController.loadSpreadsheet(filePath);
-        } catch (Exception e) {
-            throw new RuntimeException(e.getMessage());
-        }
-    }*/
 
     public SpreadsheetController getSpreadsheetController() {
         return spreadsheetController;

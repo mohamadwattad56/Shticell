@@ -17,25 +17,95 @@ public class SpreadsheetManager implements Engine {
     private final List<Version> versionHistory = new ArrayList<>();
     private boolean isSheetLoaded = false;
     private int currentVersion = 1;
+    private Map<String, Permission> userPermissions = new HashMap<>();  // Map of usernames to their permissions
+    private List<PermissionRequestDTO> processedRequests = new ArrayList<>();  // Processed (approved/denied) requests
+    private List<PermissionRequestDTO> pendingRequests = new ArrayList<>();  // Pending permission requests
+
+
+
+
+
+    public enum Permission {
+        OWNER, READER, WRITER, NONE
+    }
+
+    // Method to check if the user is the owner
+    public boolean isOwner(String username) {
+        return Permission.OWNER.equals(userPermissions.get(username));
+    }
+    public void initializeOwner(String ownerUsername) {
+        userPermissions.put(ownerUsername, Permission.OWNER);
+    }
+
+
+    // Get pending requests for the sheet
+    public List<PermissionRequestDTO> getPendingRequests() {
+        return new ArrayList<>(pendingRequests);  // Return a copy of the list
+    }
+
+    // Method to remove a request when acknowledged
+    public void removePermissionRequest(String username) {
+        pendingRequests.removeIf(request -> request.getUsername().equals(username));
+    }
+
+
+    // Add a pending permission request
+    public void addPendingRequest(PermissionRequestDTO request) {
+        pendingRequests.add(request);
+    }
+
+
+    // Approve a request
+    public void approveRequest(String username, Permission permission) {
+        for (PermissionRequestDTO request : pendingRequests) {
+            if (request.getUsername().equals(username)) {
+                request.setApproved(true);  // Mark as approved
+                userPermissions.put(username, permission);  // Grant permission
+                processedRequests.add(request);  // Move to processed list
+                pendingRequests.remove(request);  // Remove from pending list
+                break;
+            }
+        }
+    }
+
+    // Deny a request
+    public void denyRequest(String username) {
+        for (PermissionRequestDTO request : pendingRequests) {
+            if (request.getUsername().equals(username)) {
+                request.setApproved(false);  // Mark as approved
+                processedRequests.add(request);  // Move to processed list
+                pendingRequests.remove(request);  // Remove from pending list
+                break;
+            }
+        }
+    }
+
+
+    public Permission getUserPermission(String username) {
+        return userPermissions.getOrDefault(username, Permission.NONE);
+    }
+
+    public void setUserPermission(String username, Permission permission) {
+        userPermissions.put(username, permission);
+    }
+
+    // Get all processed requests (approved or denied)
+    public List<PermissionRequestDTO> getProcessedRequests() {
+        return new ArrayList<>(processedRequests);  // Return a copy of the processed requests
+    }
+
+
+
 
 
 
     public SpreadsheetManager() {
         this.currentSpreadsheet = new Spreadsheet();
+
     }
 
-    public int getNumOfRows() {
-        return currentSpreadsheet.getNumRows();
-    }
-    public int getNumOfColumns() {
-        return currentSpreadsheet.getNumCols();
-    }
-    public double getRowHeight() {
-        return currentSpreadsheet.getRowHeight();
-    }
-    public double getColumnWidth() {
-        return currentSpreadsheet.getColumnWidth();
-    }
+
+
 
     public CellUpdateDTO generateCellUpdateDTO(String cellId, String modifiedBy) {
         CellDTO updatedCell = getCellDTO(cellId);
@@ -77,14 +147,6 @@ public class SpreadsheetManager implements Engine {
         );
     }
 
-
- /*   public void setRowHeight(double rowHeight) {
-        currentSpreadsheet.setRowHeight(rowHeight);
-    }
-
-    public void setColumnWidth(double columnWidth) {
-        currentSpreadsheet.setColumnWidth(columnWidth);
-    }*/
 
 
     public void loadSpreadsheet(String filePath) {
@@ -193,8 +255,6 @@ public class SpreadsheetManager implements Engine {
                 versionHistory.add(new Version(currentVersion, currentSpreadsheet.deepCopy(), changedCells));
             }
 
-            // Create a new CellUpdateDTO to include the last modified user
-            CellUpdateDTO cellUpdateDTO = generateCellUpdateDTO(cellId, modifiedBy);
 
         } catch (IllegalArgumentException | CircularDependencyException e) {
             currentSpreadsheet.setCellValue(cellId, oldValue, currentVersion);
@@ -222,9 +282,6 @@ public class SpreadsheetManager implements Engine {
             return currentSpreadsheet.getCellDTO(cellId);
         }
 
-        public boolean isFunction(String value) {
-            return value.trim().startsWith("{") && value.trim().endsWith("}");
-        }
 
         public List<String> getVersionHistory() {
             List<String> history = new ArrayList<>();

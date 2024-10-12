@@ -4,12 +4,17 @@ import com.google.gson.Gson;
 import dashboard.dashboardCommands.DashboardCommandsController;
 import dashboard.dashboardHeader.DashboardHeaderController;
 import dashboard.dashboardTables.DashboardTablesController;
+import dto.PermissionRequestDTO;
 import dto.SpreadsheetManagerDTO;
 import dto.VersionDTO;
+import httputils.HttpClientUtil;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
+import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
@@ -22,6 +27,9 @@ import gridPageController.mainController.appController;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class MainDashboardController {
 
@@ -78,7 +86,16 @@ public class MainDashboardController {
     }
 
 
+    public appController getAppController() {
+        return appController;
+    }
+    public HBox getCenterHBox() {
+        return centerHBox;
+    }
 
+    public BorderPane getMainLayout() {
+        return mainLayout;
+    }
 
     // Method to set the dashboard username
     public void setDashUserName(String dashUserName) {
@@ -99,19 +116,13 @@ public class MainDashboardController {
 
 
     // Called when a sheet is selected in the table
-    public void handleSheetSelection(String sheetName) throws UnsupportedEncodingException {
-        fetchSheetAndDisplay(sheetName, dashboardHeaderController.getDashUserName());  // Fetch and display the sheet
+    public void handleSheetSelection(String sheetName, String uploader) throws UnsupportedEncodingException {
+        fetchSheetPermissions(sheetName,uploader);
     }
 
-    private void fetchSheetAndDisplay(String sheetName, String userName) throws UnsupportedEncodingException {
+    private void fetchSheetPermissions(String sheetName, String uploaderName) {
         OkHttpClient client = new OkHttpClient();
-
-        // Include the current user's name as a query parameter
-        String url = String.format(
-                "http://localhost:8080/server_Web/getSpreadsheet?sheetName=%s&userName=%s",
-                URLEncoder.encode(sheetName, "UTF-8"),
-                URLEncoder.encode(userName, "UTF-8")
-        );
+        String url = "http://localhost:8080/server_Web/getAllPermissions?sheetName=" + sheetName + "&uploaderName=" + uploaderName;
 
         Request request = new Request.Builder()
                 .url(url)
@@ -121,32 +132,19 @@ public class MainDashboardController {
         client.newCall(request).enqueue(new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
-                Platform.runLater(() -> System.out.println("Failed to fetch spreadsheet: " + e.getMessage()));
+                Platform.runLater(() -> System.out.println("Failed to fetch sheet permissions: " + e.getMessage()));
             }
 
             @Override
             public void onResponse(Call call, Response response) throws IOException {
                 String responseData = response.body().string();
-                Platform.runLater(() -> {
-                    Gson gson = new Gson();
-                    SpreadsheetManagerDTO spreadsheetManagerDTO = gson.fromJson(responseData, SpreadsheetManagerDTO.class);
 
-                    // Clear tableView2 (permissions table)
-                    dashboardTablesController.clearTable2();
+                // Parse the response into PermissionRequestDTO objects
+                Gson gson = new Gson();
+                PermissionRequestDTO[] permissionInfoArray = gson.fromJson(responseData, PermissionRequestDTO[].class);
 
-                    // Get uploader name from the DTO
-                    String uploader = spreadsheetManagerDTO.getUploaderName();
-
-                    // Add permission details to tableView2
-                    dashboardTablesController.addPermission(
-                            uploader,          // Username (uploader)
-                            "Owner",           // Permission type
-                            "Approved"         // Status
-                    );
-
-                    // Now display the sheet
-                   // displaySheet(spreadsheetManagerDTO);
-                });
+                // Update the TableView on the JavaFX thread and pass uploaderName to ensure owner is included
+                Platform.runLater(() -> populatePermissionsTable(Arrays.asList(permissionInfoArray), uploaderName));
             }
         });
     }
@@ -154,40 +152,51 @@ public class MainDashboardController {
 
 
 
-    // Sends the selected sheet's DTO to the controller to be displayed like in Stage 2
-    public void sendSelectedSheetToController(String sheetName) {
-        OkHttpClient client = new OkHttpClient();
 
-        Request request = new Request.Builder()
-                .url("http://localhost:8080/server_Web/getSpreadsheet?sheetName=" + sheetName)
-                .get()
-                .build();
+    // Modified method to populate tableView2
+    private void populatePermissionsTable(List<PermissionRequestDTO> permissions, String uploaderName) {
+        TableView<DashboardTablesController.PermissionRowData> tableView2 = this.dashboardTablesController.getTableView2();
 
-        client.newCall(request).enqueue(new Callback() {
-            @Override
-            public void onFailure(Call call, IOException e) {
-                Platform.runLater(() -> System.out.println("Failed to send sheet to controller: " + e.getMessage()));
-            }
+        // Only add columns once if they haven't been set
+        if (tableView2.getColumns().isEmpty()) {
+            TableColumn<DashboardTablesController.PermissionRowData, String> usernameCol = new TableColumn<>("Username");
+            TableColumn<DashboardTablesController.PermissionRowData, String> permissionTypeCol = new TableColumn<>("Permission Type");
+            TableColumn<DashboardTablesController.PermissionRowData, String> approvalCol = new TableColumn<>("Approved");
 
-            @Override
-            public void onResponse(Call call, Response response) throws IOException {
-                String responseData = response.body().string();
-                Platform.runLater(() -> {
-                    Gson gson = new Gson();
-                    SpreadsheetManagerDTO spreadsheetManagerDTO = gson.fromJson(responseData, SpreadsheetManagerDTO.class);
+            usernameCol.setCellValueFactory(new PropertyValueFactory<>("userName"));
+            permissionTypeCol.setCellValueFactory(new PropertyValueFactory<>("permissionType"));
+            approvalCol.setCellValueFactory(new PropertyValueFactory<>("status"));
 
-                    // Send the DTO to the SpreadsheetController (like in Stage 2)
-                   // spreadsheetController.loadSpreadsheet(spreadsheetManagerDTO);
-                });
-            }
-        });
+            tableView2.getColumns().addAll(usernameCol, permissionTypeCol, approvalCol);
+        }
+
+        // Convert PermissionRequestDTO to PermissionRowData for display
+        List<DashboardTablesController.PermissionRowData> rowDataList = permissions.stream()
+                .map(permission -> new DashboardTablesController.PermissionRowData(
+                        permission.getUsername(),
+                        permission.getPermissionType(),
+                        permission.isApproved() ? "Approved" : "Pending"))
+                .collect(Collectors.toList());
+
+        DashboardTablesController.PermissionRowData ownerRow = new DashboardTablesController.PermissionRowData(uploaderName, "OWNER", "Approved");
+
+        // Add the ownerRow as the first row
+        rowDataList.add(0, ownerRow);
+
+        // Only update the table if the data has changed
+        if (!tableView2.getItems().equals(rowDataList)) {
+            tableView2.getItems().setAll(rowDataList);
+        }
     }
 
 
-    public void loadSheetFromServer(String sheetName, String uploaderName) throws UnsupportedEncodingException {
+
+
+
+
+    public void loadSheetFromServer(String sheetName, String uploaderName, String userPermission) throws UnsupportedEncodingException {
         OkHttpClient client = new OkHttpClient();
         String userName = this.dashboardHeaderController.getDashUserName();
-        // Add uploaderName as a query parameter in the request
         String url = String.format("http://localhost:8080/server_Web/getSpreadsheet?sheetName=%s&uploaderName=%s&userName=%s",
                 URLEncoder.encode(sheetName, "UTF-8"),
                 URLEncoder.encode(uploaderName, "UTF-8"),
@@ -207,24 +216,27 @@ public class MainDashboardController {
             @Override
             public void onResponse(Call call, Response response) throws IOException {
                 String responseData = response.body().string();
-
                 Platform.runLater(() -> {
-                    System.out.println("Response from server: " + responseData);  // For debugging
+                    try {
+                        Gson gson = new Gson();
+                        SpreadsheetManagerDTO spreadsheetManagerDTO = gson.fromJson(responseData, SpreadsheetManagerDTO.class);
 
-                    Gson gson = new Gson();
-                    SpreadsheetManagerDTO spreadsheetManagerDTO = gson.fromJson(responseData, SpreadsheetManagerDTO.class);
-
-                    // Now that we have the SpreadsheetManagerDTO, pass it to the controller to display
-                    displaySheet(spreadsheetManagerDTO);
+                        // Now that we have the SpreadsheetManagerDTO, pass it to displaySheet with the user's permission
+                        displaySheet(spreadsheetManagerDTO, userPermission);  // Pass the permission
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
                 });
             }
         });
     }
 
 
-    private void displaySheet(SpreadsheetManagerDTO spreadsheetManagerDTO) {
+
+
+    private void displaySheet(SpreadsheetManagerDTO spreadsheetManagerDTO, String userPermission) {
         try {
-            System.out.println("Displaying sheet: " + spreadsheetManagerDTO.getSpreadsheetDTO().getSheetName());  // For debugging
+            System.out.println("Displaying sheet: " + spreadsheetManagerDTO.getSpreadsheetDTO().getSheetName());
 
             // Create a new stage to display the sheet in a separate window
             Stage sheetStage = new Stage();
@@ -232,17 +244,24 @@ public class MainDashboardController {
 
             // Load the appController layout (MainLayout.fxml)
             FXMLLoader appLoader = new FXMLLoader(getClass().getResource("/gridPageController/mainController/MainLayout.fxml"));
-            StackPane appPane = appLoader.load();  // Load the FXML
-            appController = appLoader.getController();  // Get the appController
-            appController.setMainDashboardController(this);  // Pass MainDashboardController to AppController
-
+            StackPane appPane = appLoader.load();
+            appController = appLoader.getController();
+            appController.setMainDashboardController(this);
 
             // Set the spreadsheet data in the appController to display
-            appController.getSpreadsheetController().loadSpreadsheetFromDTO(spreadsheetManagerDTO);
+            appController.getSpreadsheetController().loadSpreadsheetFromDTO(spreadsheetManagerDTO, userPermission);
+
+            // Disable editing features if the user is not a WRITER
+            if (userPermission.equals("READER")) {
+                System.out.println("Disabling editing features for READER permission.");
+                disableEditingFeatures();
+            } else {
+                System.out.println("Permission allows editing: " + userPermission);
+            }
 
             // Set the event handler to stop polling when the window is closed
             sheetStage.setOnCloseRequest(event -> {
-                appController.getSpreadsheetController().stopPollingForNewVersions(); // Stop polling when the window is closed
+                appController.getSpreadsheetController().stopPollingForNewVersions();
             });
 
             // Create a new scene and set it to the stage
@@ -261,6 +280,18 @@ public class MainDashboardController {
 
 
 
+    public void disableEditingFeatures() {
+        System.out.println("Disabling editing features for READER permission");
+
+        // Ensure this runs on the JavaFX Application thread
+        Platform.runLater(() -> {
+            System.out.println("Inside Platform.runLater for disableEditingFeatures");
+/*
+           getAppController().getSpreadsheetController().disableEditing();
+*/
+            getAppController().getHeadController().disableEditing();
+        });
+    }
 
 
 

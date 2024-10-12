@@ -75,6 +75,16 @@
 
 }
 
+.text-field:disabled {
+    -fx-opacity: 0.6; /* Reduce opacity for disabled look */
+    -fx-background-color: #f0f0f0; /* Gray background for disabled */
+}
+
+.button:disabled {
+    -fx-opacity: 0.6; /* Reduce opacity for disabled look */
+    -fx-background-color: #cccccc; /* Gray background for disabled */
+    -fx-cursor: default; /* Change the cursor to default */
+}
 
 
 
