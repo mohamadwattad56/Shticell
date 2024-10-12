@@ -1,6 +1,7 @@
 package servlets;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import dto.SpreadsheetManagerDTO;
 import Spreadsheet.impl.SpreadsheetManager;
 import jakarta.servlet.ServletException;
@@ -40,8 +41,11 @@ public class GetUploadedFilesServlet extends HttpServlet {
             spreadsheetManagerDTOMap.put(sheetName, spreadsheetManager.toDTO(uploaderName));
         });
 
-        // Use GSON to serialize the map into JSON format
-        Gson gson = new Gson();
+        // Use GSON to serialize the map into JSON format with special floating-point values support
+        Gson gson = new GsonBuilder()
+                .serializeSpecialFloatingPointValues() // This will allow NaN, Infinity, -Infinity
+                .create();
+
         String jsonResponse = gson.toJson(spreadsheetManagerDTOMap);
 
         // Set response headers and send the response
@@ -50,4 +54,3 @@ public class GetUploadedFilesServlet extends HttpServlet {
         response.getWriter().write(jsonResponse);
     }
 }
-

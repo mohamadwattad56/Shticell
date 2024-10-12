@@ -9,7 +9,7 @@
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
-<VBox fx:id="header" alignment="TOP_CENTER" prefHeight="88.0" prefWidth="600.0" spacing="10.0" stylesheets="@../../resources/styles.css" xmlns="http://javafx.com/javafx/23" xmlns:fx="http://javafx.com/fxml/1" fx:controller="gridPageController.headController.HeadController">
+<VBox fx:id="header" alignment="TOP_CENTER" prefHeight="149.0" prefWidth="698.0" spacing="10.0" stylesheets="@../../resources/styles.css" xmlns="http://javafx.com/javafx/23" xmlns:fx="http://javafx.com/fxml/1" fx:controller="gridPageController.headController.HeadController">
    <children>
       <Label styleClass="main-title" text="Shticell" />
       <HBox spacing="10.0" HBox.hgrow="ALWAYS">
@@ -31,11 +31,12 @@
       </HBox>
       <HBox spacing="10.0" HBox.hgrow="ALWAYS">
          <children>
-            <TextField fx:id="selectedCellIdField" text="Selected Cell ID" />
-            <TextField fx:id="originalCellValueField" text="Original Cell value" />
-            <Button fx:id="updateValueButton" style="-fx-padding: 3px 8px;" styleClass="custom-button" text="Update value" />
-            <Label fx:id="lastUpdateCellVersionField" styleClass="custom-label" text="Last update cell version" />
-            <Button fx:id="versionSelectorButton" style="-fx-padding: 3px 8px;" styleClass="custom-button" text="Version Selector" />
+            <TextField fx:id="selectedCellIdField" prefHeight="26.0" prefWidth="59.0" text="Selected Cell ID" />
+            <TextField fx:id="originalCellValueField" prefHeight="26.0" prefWidth="118.0" text="Original Cell value" />
+            <Button fx:id="updateValueButton" prefHeight="27.0" prefWidth="112.0" style="-fx-padding: 3px 8px;" styleClass="custom-button" text="Update value" />
+            <Label fx:id="lastUpdateCellVersionField" prefHeight="33.0" prefWidth="196.0" styleClass="custom-label" text="Last update cell version" />
+            <Label fx:id="modifiedBy" layoutX="322.0" layoutY="10.0" prefHeight="34.0" prefWidth="114.0" styleClass="custom-label" text="By user :" />
+            <Button fx:id="versionSelectorButton" prefHeight="27.0" prefWidth="108.0" style="-fx-padding: 3px 8px;" styleClass="custom-button" text="Version Selector" />
          </children>
       </HBox>
    </children>

@@ -59,7 +59,7 @@ public class SpreadsheetManager implements Engine {
     public void approveRequest(String username, Permission permission) {
         for (PermissionRequestDTO request : pendingRequests) {
             if (request.getUsername().equals(username)) {
-                request.setApproved(true);  // Mark as approved
+                request.setRequestStatus(PermissionRequestDTO.RequestStatus.APPROVED);  // Mark as approved
                 userPermissions.put(username, permission);  // Grant permission
                 processedRequests.add(request);  // Move to processed list
                 pendingRequests.remove(request);  // Remove from pending list
@@ -72,7 +72,7 @@ public class SpreadsheetManager implements Engine {
     public void denyRequest(String username) {
         for (PermissionRequestDTO request : pendingRequests) {
             if (request.getUsername().equals(username)) {
-                request.setApproved(false);  // Mark as approved
+                request.setRequestStatus(PermissionRequestDTO.RequestStatus.DENIED);  // Mark as approved
                 processedRequests.add(request);  // Move to processed list
                 pendingRequests.remove(request);  // Remove from pending list
                 break;

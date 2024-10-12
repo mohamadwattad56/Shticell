@@ -2,6 +2,7 @@ package servlets;
 
 import Spreadsheet.impl.SpreadsheetManager;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import dto.CellUpdateDTO;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -33,10 +34,15 @@ public class GetCellUpdateServlet extends HttpServlet {
                 // Generate a CellUpdateDTO containing the updated cell and its dependents
                 CellUpdateDTO cellUpdateDTO = spreadsheetManager.generateCellUpdateDTO(cellId, userName);
 
+                // Use GsonBuilder to handle special floating-point values like NaN
+                Gson gson = new GsonBuilder()
+                        .serializeSpecialFloatingPointValues() // Allow NaN, Infinity, etc.
+                        .create();
+
                 // Convert the DTO to JSON and send it in the response
-                Gson gson = new Gson();
                 String jsonResponse = gson.toJson(cellUpdateDTO);
                 response.setContentType("application/json");
+                response.setCharacterEncoding("UTF-8");
                 response.getWriter().write(jsonResponse);
             } catch (Exception e) {
                 response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
@@ -48,4 +54,3 @@ public class GetCellUpdateServlet extends HttpServlet {
         }
     }
 }
-

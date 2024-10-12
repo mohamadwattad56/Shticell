@@ -12,6 +12,8 @@ public class CellDTO {
     private int lastModifiedVersion;
     private final List<String> dependencies;
     private final List<String> dependents;
+    private String lastModifiedBy;
+
 
     // New fields for text color and background color
     private String textColor; // Change to non-final to allow modification
@@ -33,6 +35,14 @@ public class CellDTO {
     // Overloaded constructor with default text and background colors
     public CellDTO(String cellId, Object sourceValue, Object effectiveValue, CellType type, int lastModifiedVersion, List<String> dependencies, List<String> dependents) {
         this(cellId, sourceValue, effectiveValue, type, lastModifiedVersion, dependencies, dependents, "black", "white"); // Default colors
+    }
+
+    public void setLastModifiedBy(String lastModifiedBy) {
+        this.lastModifiedBy = lastModifiedBy;
+    }
+
+    public String getLastModifiedBy() {
+        return lastModifiedBy;
     }
 
     // Getters

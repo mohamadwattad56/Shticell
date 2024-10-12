@@ -149,7 +149,7 @@ public class Spreadsheet implements Serializable {
             }
 
         } catch (JAXBException e) {
-            throw new RuntimeException("Error parsing the XML file: " + e.getMessage(), e);
+            throw new RuntimeException("Error parsing the XML file: " + e.getMessage());
         }
     }
 

@@ -6,8 +6,6 @@ import dashboard.dashboardHeader.DashboardHeaderController;
 import dashboard.dashboardTables.DashboardTablesController;
 import dto.PermissionRequestDTO;
 import dto.SpreadsheetManagerDTO;
-import dto.VersionDTO;
-import httputils.HttpClientUtil;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -175,10 +173,11 @@ public class MainDashboardController {
                 .map(permission -> new DashboardTablesController.PermissionRowData(
                         permission.getUsername(),
                         permission.getPermissionType(),
-                        permission.isApproved() ? "Approved" : "Pending"))
+                        permission.getRequestStatus().name())
+                )
                 .collect(Collectors.toList());
 
-        DashboardTablesController.PermissionRowData ownerRow = new DashboardTablesController.PermissionRowData(uploaderName, "OWNER", "Approved");
+        DashboardTablesController.PermissionRowData ownerRow = new DashboardTablesController.PermissionRowData(uploaderName, "OWNER", "APPROVED");
 
         // Add the ownerRow as the first row
         rowDataList.add(0, ownerRow);

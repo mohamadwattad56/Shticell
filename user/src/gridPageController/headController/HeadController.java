@@ -40,13 +40,6 @@
         @FXML
         private Button versionButton;  // Define the button
 
-        // Link to the Button in the first HBox
-/*        @FXML
-        private Button loadFileButton;  // This will refer to "Load File Button"
-
-        // Link to the TextField in the first HBox
-        @FXML
-        private TextField filePathField;  // This will refer to "Currently Loaded File path"*/
 
         // Link to the TextFields and Buttons in the second HBox
         @FXML
@@ -66,6 +59,9 @@
 
         @FXML
         private VBox header;
+
+        @FXML
+        private Label modifiedBy;
 
 
         @FXML
@@ -101,8 +97,15 @@
             // Call the updateCellValue method in SpreadsheetController
             appController.getSpreadsheetController().updateCellValue(cellIdentifier, newValue, oldValue);
 
+            String tmp = this.appController.getSpreadsheetController().getSpreadsheet().getCellDTO(cellIdentifier).getLastModifiedBy() == null ? "" :( "By user: " +  this.appController.getSpreadsheetController().getSpreadsheet().getCellDTO(cellIdentifier).getLastModifiedBy());
+
             // Update the lastUpdateCellVersionField
-            lastUpdateCellVersionField.setText("Last update cell version : " + String.valueOf(appController.getSpreadsheetController().getSpreadsheet().getCellDTO(cellIdentifier).getLastModifiedVersion() + 1));
+            lastUpdateCellVersionField.setText("Last update cell version : " + String.valueOf(appController.getSpreadsheetController().getSpreadsheet().getCurrentVersion()));
+            modifiedBy.setText(tmp);
+        }
+
+        public Label getModifiedBy() {
+                return modifiedBy;
         }
 
         public void setMainController(appController appController) {

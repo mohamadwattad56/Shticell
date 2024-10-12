@@ -41,12 +41,20 @@ public class RequestPermissionServlet extends HttpServlet {
                 .anyMatch(req -> req.getUsername().equals(username) && req.getPermissionType().equalsIgnoreCase(permissionType));
 
         if (alreadyHasPermission) {
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "User already has the requested permission.");
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Owner already Approved/Denied requested permission.");
+            return;
+        }
+
+        boolean requestIsPending = spreadsheetManager.getPendingRequests().stream()
+                .anyMatch(req -> req.getUsername().equals(username) && req.getPermissionType().equalsIgnoreCase(permissionType));
+
+        if (requestIsPending) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "User already requested permission.");
             return;
         }
 
         // Create a new pending permission request and add it to the spreadsheet manager
-        PermissionRequestDTO requestDTO = new PermissionRequestDTO(username, permissionType, false, spreadsheetManager.getSpreadsheetName());
+        PermissionRequestDTO requestDTO = new PermissionRequestDTO(username, permissionType, PermissionRequestDTO.RequestStatus.PENDING, spreadsheetManager.getSpreadsheetName());
         spreadsheetManager.addPendingRequest(requestDTO);
 
         response.setStatus(HttpServletResponse.SC_OK);

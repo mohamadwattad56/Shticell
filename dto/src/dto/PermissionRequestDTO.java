@@ -3,7 +3,7 @@ package dto;
 public class PermissionRequestDTO {
     private String username;
     private String permissionType;
-    private boolean isApproved; ///TODO : Change to enum pending/approved/denied
+    private RequestStatus requestStatus; ///TODO : Change to enum pending/approved/denied
     private final String sheetName;
 
     public enum RequestStatus {
@@ -11,10 +11,10 @@ public class PermissionRequestDTO {
     }
 
 
-    public PermissionRequestDTO(String username, String permissionType, boolean isApproved, String sheetName) {
+    public PermissionRequestDTO(String username, String permissionType, RequestStatus isApproved, String sheetName) {
         this.username = username;
         this.permissionType = permissionType;
-        this.isApproved = isApproved;
+        this.requestStatus = isApproved;
         this.sheetName = sheetName;
 
     }
@@ -33,11 +33,11 @@ public class PermissionRequestDTO {
     public void setPermissionType(String permissionType) {
         this.permissionType = permissionType;
     }
-    public boolean isApproved() {
-        return isApproved;
+    public RequestStatus getRequestStatus() {
+        return requestStatus;
     }
-    public void setApproved(boolean isApproved) {
-        this.isApproved = isApproved;
+    public void setRequestStatus(RequestStatus isApproved) {
+        this.requestStatus = isApproved;
     }
 
 }

@@ -2,6 +2,7 @@ package servlets;
 
 import Spreadsheet.impl.SpreadsheetManager;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import dto.CellUpdateDTO;
 import jakarta.servlet.annotation.WebServlet;
@@ -11,7 +12,6 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 import java.util.Map;
-
 @WebServlet("/updateCellValue")
 public class UpdateCellValueServlet extends HttpServlet {
 
@@ -67,7 +67,10 @@ public class UpdateCellValueServlet extends HttpServlet {
                 CellUpdateDTO cellUpdateDTO = spreadsheetManager.generateCellUpdateDTO(cellIdentifier, userName);
 
                 // Convert response to JSON and send it back to the client
-                Gson gson = new Gson();
+                Gson gson = new GsonBuilder()
+                        .serializeSpecialFloatingPointValues() // This allows NaN and other special values
+                        .create();
+
                 String jsonResponse = gson.toJson(cellUpdateDTO);
                 response.setContentType("application/json");
                 response.getWriter().write(jsonResponse);
@@ -82,4 +85,3 @@ public class UpdateCellValueServlet extends HttpServlet {
         }
     }
 }
-

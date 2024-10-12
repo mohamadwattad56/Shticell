@@ -1,7 +1,6 @@
 package dashboard.dashboardCommands;
 
 import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 import dashboard.dashboardTables.DashboardTablesController;
 import dashboard.mainDashboardController.MainDashboardController;
 import dto.PermissionRequestDTO;
@@ -9,7 +8,6 @@ import javafx.animation.FadeTransition;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
-import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
@@ -204,13 +202,18 @@ public class DashboardCommandsController {
 
         // Get the selected sheet from DashboardTablesController
         DashboardTablesController.SheetRowData selectedSheet = mainDashboardController.getDashboardTablesController().getSelectedSheet();
-
         if (selectedSheet != null) {
-            String sheetName = selectedSheet.getSheetName();
-            System.out.println("Selected sheet: " + sheetName);
+            if(selectedSheet.getUploader().equalsIgnoreCase(this.mainDashboardController.getDashboardHeaderController().getDashUserName()))
+            {
+                String sheetName = selectedSheet.getSheetName();
+                System.out.println("Selected sheet: " + sheetName);
 
-            // Fetch the pending permission requests from the server
-            fetchPendingRequests(sheetName);
+                // Fetch the pending permission requests from the server
+                fetchPendingRequests(sheetName);
+            }
+            else {
+                this.mainDashboardController.getAppController().showError("","You must be the owner to acknowledge/deny permissions.");
+            }
         } else {
             System.out.println("No sheet selected.");
         }
@@ -303,7 +306,7 @@ public class DashboardCommandsController {
 
         // Convert PermissionRequestDTO to PermissionRowData
         List<DashboardTablesController.PermissionRowData> rowDataList = pendingRequests.stream()
-                .map(dto -> new DashboardTablesController.PermissionRowData(dto.getUsername(), dto.getPermissionType(), dto.isApproved() ? "Approved" : "Pending"))
+                .map(dto -> new DashboardTablesController.PermissionRowData(dto.getUsername(), dto.getPermissionType(), dto.getRequestStatus().name()))
                 .collect(Collectors.toList());
 
         // Add columns to the table
@@ -319,7 +322,7 @@ public class DashboardCommandsController {
 
     // Helper method to convert PermissionRowData back to PermissionRequestDTO for server-side actions
     private PermissionRequestDTO convertRowDataToDTO(DashboardTablesController.PermissionRowData rowData, String sheetName) {
-        boolean isApproved = rowData.getStatus().equalsIgnoreCase("Approved");
+        PermissionRequestDTO.RequestStatus isApproved = rowData.getStatus().equalsIgnoreCase("PENDING") ? PermissionRequestDTO.RequestStatus.PENDING : rowData.getStatus().equalsIgnoreCase("approved") ? PermissionRequestDTO.RequestStatus.APPROVED : PermissionRequestDTO.RequestStatus.DENIED;
         return new PermissionRequestDTO(rowData.getUserName(), rowData.getPermissionType(), isApproved, sheetName);
     }
 

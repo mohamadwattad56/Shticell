@@ -26,4 +26,8 @@ public class CellUpdateDTO {
     public List<CellDTO> getDependencyCells() {
         return dependencyCells;
     }
+
+    public String getLastModifiedBy() {
+        return lastModifiedBy;
+    }
 }

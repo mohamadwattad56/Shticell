@@ -49,6 +49,10 @@ public class SpreadsheetController implements Serializable {
     private boolean isPolling = false;
 
 
+    public SpreadsheetManagerDTO getSpreadsheetManagerDTO() {
+        return spreadsheetManagerDTO;
+    }
+
     static {
         functionArgCounts.put("PLUS", 2);
         functionArgCounts.put("MINUS", 2);
@@ -394,12 +398,15 @@ public class SpreadsheetController implements Serializable {
             TextField selectedCellIdField = headController.getSelectedCellIdField();
             TextField originalCellValueField = headController.getOriginalCellValueField();
             Label lastUpdateCellVersionField = headController.getLastUpdateCellVersionField();
+            Label modifiedBy = headController.getModifiedBy();
             if (selectedCellIdField != null && originalCellValueField != null) {
                 selectedCellIdField.setText(cellIdentifier);
                 String sourceValue = spreadsheetManagerDTO.getCellDTO(cellIdentifier).getSourceValue().toString();
                 int lastModifiedVersion = spreadsheetManagerDTO.getCellDTO(cellIdentifier).getLastModifiedVersion();
                 originalCellValueField.setText(sourceValue.equals("EMPTY") ? "" : sourceValue);
-                lastUpdateCellVersionField.setText("Last update cell version: " + String.valueOf(lastModifiedVersion));
+                String tmp = spreadsheetManagerDTO.getCellDTO(cellIdentifier).getLastModifiedBy() == null ? "" :( "By user: " + spreadsheetManagerDTO.getCellDTO(cellIdentifier).getLastModifiedBy());
+                lastUpdateCellVersionField.setText("Last update cell version: " + (lastModifiedVersion));
+                modifiedBy.setText(tmp);
 
                 // Check the user's permission before showing the popup
                 if (!userPermission.equals("READER")) {
@@ -867,26 +874,26 @@ public class SpreadsheetController implements Serializable {
                     try {
                         // Check if the server response indicates a version conflict (HTTP 409)
                         if (response.code() == 409) {
-                            // Assuming the server sends the latest version in response body for a version conflict
-                            JsonObject jsonResponse = gson.fromJson(responseData, JsonObject.class);
-                            int latestVersion = jsonResponse.get("latestVersion").getAsInt();
-
-                            // Show the new version button to the user
-                            headController.showNewVersionIndicator(latestVersion);
-
                             // Show the version conflict error message
                             appController.showError("Version Conflict", "You are viewing an outdated version. Please update to the latest version.");
                             return;
                         }
 
+                        if(response.code() == 400)
+                        {
+                            appController.showError("",responseData );
+                            return;
+                        }
                         // Parse the server response if there's no version conflict
                         CellUpdateDTO cellUpdateDTO = gson.fromJson(responseData, CellUpdateDTO.class);
 
                         // Update the client-side DTO with the new cell value and dependents
-                        updateCellInClientDTO(cellUpdateDTO.getUpdatedCell(), cellUpdateDTO.getDependentCells());
+                        updateCellInClientDTO(cellUpdateDTO.getUpdatedCell(), cellUpdateDTO.getDependentCells(), cellUpdateDTO.getLastModifiedBy());
 
                         // Refresh the dependents visually
                         refreshCellAndDependents(cellIdentifier);
+
+                        spreadsheetManagerDTO.getCellDTO(cellIdentifier).setLastModifiedBy(cellUpdateDTO.getLastModifiedBy());
 
                         int latestVersion = cellUpdateDTO.getUpdatedCell().getLastModifiedVersion();
                         spreadsheetManagerDTO.setCurrentVersion(latestVersion + 1);
@@ -939,7 +946,7 @@ public class SpreadsheetController implements Serializable {
         OkHttpClient client = new OkHttpClient();
 
         // Include userName (current user viewing the sheet) in the request
-        String userName = appController.getSpreadsheetController().spreadsheetManagerDTO.getCurrentUserName(); // Assuming you have a way to get the current user
+        String userName = appController.getSpreadsheetController().spreadsheetManagerDTO.getCurrentUserName();
 
         // Construct the URL with query parameters, including the userName
         String url = String.format(
@@ -988,7 +995,7 @@ public class SpreadsheetController implements Serializable {
     }
 
 
-    private void updateCellInClientDTO(CellDTO updatedCell, List<CellDTO> dependentCells) {
+    private void updateCellInClientDTO(CellDTO updatedCell, List<CellDTO> dependentCells, String lastModifiedBy) {
         // Update the cell in the client-side DTO
         for (CellDTO cell : spreadsheetManagerDTO.getSpreadsheetDTO().getCells()) {
             if (cell.getCellId().equals(updatedCell.getCellId())) {
@@ -998,6 +1005,7 @@ public class SpreadsheetController implements Serializable {
                 cell.setLastModifiedVersion(updatedCell.getLastModifiedVersion());
                 cell.setTextColor(updatedCell.getTextColor());
                 cell.setBackgroundColor(updatedCell.getBackgroundColor());
+                cell.setLastModifiedBy(lastModifiedBy);
                 break;
             }
         }
@@ -1012,6 +1020,7 @@ public class SpreadsheetController implements Serializable {
                     cell.setLastModifiedVersion(dependentCell.getLastModifiedVersion());
                     cell.setTextColor(dependentCell.getTextColor());
                     cell.setBackgroundColor(dependentCell.getBackgroundColor());
+                    cell.setLastModifiedBy(lastModifiedBy);
                     break;
                 }
             }
@@ -1038,6 +1047,7 @@ public class SpreadsheetController implements Serializable {
             String backgroundColor = updatedCell.getBackgroundColor();
             cellLabel.setStyle(cellLabel.getStyle() + "-fx-background-color: " + backgroundColor + ";");
         }
+
     }
 
 
