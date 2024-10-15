@@ -10,6 +10,7 @@ import javafx.animation.FadeTransition;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
+import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
@@ -47,10 +48,9 @@ public class DashboardHeaderController {
 
     public void initialize() {
         loadFileButton.setOnAction(event -> handleLoadFile());
-       // progressBar.setVisible(false);
-
         // Add Timeline for polling every 2 seconds
         startFetchingFiles(); // Start fetching the uploaded files every 2 seconds
+
     }
 
     private void startFetchingFiles() {
@@ -92,17 +92,34 @@ public class DashboardHeaderController {
                         return;
                     }
 
-                    // Clear any existing entries
-                    mainDashboardController.getDashboardTablesController().clearTable1();
+                    // Check if there are actual changes in the data
+                    ObservableList<DashboardTablesController.SheetRowData> currentData = mainDashboardController.getDashboardTablesController().getSheetData();
+                    boolean hasChanges = false;
 
-                    // Iterate over the map and add sheets to the table
+                    // Compare current data with the new data
                     for (SpreadsheetManagerDTO dto : spreadsheetManagerMap.values()) {
                         String sheetName = dto.getSpreadsheetDTO().getSheetName();
                         String uploader = dto.getUploaderName();  // Assuming you added this field to SpreadsheetManagerDTO
                         String sheetSize = dto.getSpreadsheetDTO().getRows() + "x" + dto.getSpreadsheetDTO().getColumns();
 
-                        // Add the sheet details to the first table
-                        mainDashboardController.getDashboardTablesController().addSheet(uploader, sheetName, sheetSize);
+                        // Check if the sheet already exists in the current data
+                        boolean found = false;
+                        for (DashboardTablesController.SheetRowData existingRow : currentData) {
+                            if (existingRow.getSheetName().equals(sheetName)) {
+                                found = true;
+                                break;
+                            }
+                        }
+
+                        if (!found) {
+                            hasChanges = true;
+                            mainDashboardController.getDashboardTablesController().addSheet(uploader, sheetName, sheetSize);
+                        }
+                    }
+
+                    // If no changes were detected, skip the refresh
+                    if (!hasChanges) {
+                        return;
                     }
 
                     // Restore the selection after refreshing the table
@@ -113,6 +130,7 @@ public class DashboardHeaderController {
             }
         });
     }
+
 
 
 
@@ -132,8 +150,7 @@ public class DashboardHeaderController {
     }
 
     private void uploadFileToServer(File file) {
-     //   progressBar.setVisible(true);
-       // progressBar.setProgress(0.0);
+
 
         String uploaderName = dashUserName.getText();  // The uploader's name
         String filePath = file.getAbsolutePath();  // Get the absolute file path

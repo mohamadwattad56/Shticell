@@ -1,5 +1,6 @@
 package servlets;
 
+import com.google.gson.GsonBuilder;
 import dto.SpreadsheetManagerDTO;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -50,7 +51,9 @@ public class GetSpreadsheetServlet extends HttpServlet {
         spreadsheetManagerDTO.setCurrentUserName(userName);
 
         // Send the SpreadsheetManagerDTO as JSON
-        Gson gson = new Gson();
+        Gson gson = new GsonBuilder()
+                .serializeSpecialFloatingPointValues() // Allow NaN, Infinity, etc.
+                .create();
         String jsonResponse = gson.toJson(spreadsheetManagerDTO);
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");

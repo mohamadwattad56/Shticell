@@ -68,6 +68,7 @@ public class FileUploadServlet extends HttpServlet {
                 // Convert the SpreadsheetManager to DTO for easier transmission
                 SpreadsheetManagerDTO spreadsheetManagerDTO = spreadsheetManager.toDTO(uploaderName);
 
+                spreadsheetManagerDTO.setInitialCellsModifiers(uploaderName);
                 // Respond with success and return the DTO (or just confirmation)
                 response.setStatus(HttpServletResponse.SC_OK);
                 response.getWriter().write("File uploaded successfully with sheet name: " + spreadsheetManagerDTO.getSpreadsheetDTO().getSheetName());

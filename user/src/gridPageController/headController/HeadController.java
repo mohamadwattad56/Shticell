@@ -97,7 +97,7 @@
             // Call the updateCellValue method in SpreadsheetController
             appController.getSpreadsheetController().updateCellValue(cellIdentifier, newValue, oldValue);
 
-            String tmp = this.appController.getSpreadsheetController().getSpreadsheet().getCellDTO(cellIdentifier).getLastModifiedBy() == null ? "" :( "By user: " +  this.appController.getSpreadsheetController().getSpreadsheet().getCellDTO(cellIdentifier).getLastModifiedBy());
+            String tmp = "By user: " + this.appController.getMainDashboardController().getDashboardHeaderController().getDashUserName();
 
             // Update the lastUpdateCellVersionField
             lastUpdateCellVersionField.setText("Last update cell version : " + String.valueOf(appController.getSpreadsheetController().getSpreadsheet().getCurrentVersion()));

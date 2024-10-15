@@ -118,7 +118,7 @@ public class MainDashboardController {
         fetchSheetPermissions(sheetName,uploader);
     }
 
-    private void fetchSheetPermissions(String sheetName, String uploaderName) {
+    public void fetchSheetPermissions(String sheetName, String uploaderName) {
         OkHttpClient client = new OkHttpClient();
         String url = "http://localhost:8080/server_Web/getAllPermissions?sheetName=" + sheetName + "&uploaderName=" + uploaderName;
 

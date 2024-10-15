@@ -1030,8 +1030,8 @@ public class SpreadsheetController implements Serializable {
 
     // Same as before, update the UI for the specific cell in the grid
     private void updateCellInGrid(CellDTO updatedCell) {
-        Node cellNode = getCellNodeById(updatedCell.getCellId());
-
+        String currentCellId = updatedCell.getCellId();
+        Node cellNode = getCellNodeById(currentCellId);
         if (cellNode instanceof Label) {
             Label cellLabel = (Label) cellNode;
 
@@ -1046,6 +1046,39 @@ public class SpreadsheetController implements Serializable {
             // Apply the updated background color
             String backgroundColor = updatedCell.getBackgroundColor();
             cellLabel.setStyle(cellLabel.getStyle() + "-fx-background-color: " + backgroundColor + ";");
+        }
+
+        for (Node node : spreadsheetGrid.getChildren()) {
+            if (GridPane.getColumnIndex(node) != null && GridPane.getRowIndex(node) != null) {
+                int rowIndex = GridPane.getRowIndex(node);
+                int columnIndex = GridPane.getColumnIndex(node);
+
+                // Skip the first row and column
+                if (rowIndex > 0 && columnIndex > 0) {
+                   // String currentCellId = getCellIdFromCoordinates(rowIndex, columnIndex);
+
+                    // Get the current background and text colors of the cell from the data model
+                    String backgroundColor = spreadsheetManagerDTO.getCellBackgroundColor(currentCellId);
+                    String textColor = spreadsheetManagerDTO.getCellTextColor(currentCellId);
+                    String cellClass = this.appController.getCellClassForCurrentSkin();
+
+                    // Only change the cell if it has a white background and black text
+                    if ((backgroundColor.equals("white") || backgroundColor.equals("#FFFFFF")) &&
+                            (textColor.equals("black") || textColor.equals("#000000"))) {
+                        node.getStyleClass().clear();
+                        node.getStyleClass().add(cellClass);
+
+                        // Re-apply borders and text color based on the current skin
+                        node.setStyle("-fx-text-fill: " + (cellClass.equals("dark-cell") ? "#ffffff" : "#000000") + "; -fx-border-color: " + (cellClass.equals("dark-cell") ? "#ffffff" : "#000000") + ";");
+                    } else {
+                        node.getStyleClass().clear();
+                        node.getStyleClass().add(cellClass);
+
+                        // Re-apply borders and text color based on the model (with correct CSS values)
+                        node.setStyle("-fx-text-fill: " + textColor + "; -fx-border-color: #000000; -fx-background-color: " + backgroundColor + ";");
+                    }
+                }
+            }
         }
 
     }

@@ -54,6 +54,10 @@ public class DashboardTablesController {
         return tableView1.getSelectionModel().getSelectedItem();
     }
 
+    public ObservableList<SheetRowData> getSheetData() {
+        return sheetData;
+    }
+
     // Data class for tableView1 (sheets)
     public static class SheetRowData {
         private final String uploader;
@@ -152,7 +156,10 @@ public class DashboardTablesController {
 
     // Method to add a new sheet to tableView1
     public void addSheet(String uploader, String sheetName, String sheetSize) {
-        sheetData.add(new SheetRowData(uploader, sheetName, sheetSize, "Owner"));
+        this.mainDashboardController.getDashboardCommandsController().fetchUserPermission(sheetName, this.mainDashboardController.getDashboardHeaderController().getDashUserName(), permission -> {
+                sheetData.add(new SheetRowData(uploader, sheetName, sheetSize, permission));
+        });
+
         tableView1.refresh();
     }
 

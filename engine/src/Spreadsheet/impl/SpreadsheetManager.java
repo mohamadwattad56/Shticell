@@ -158,6 +158,7 @@ public class SpreadsheetManager implements Engine {
             versionHistory.clear();
             versionHistory.add(new Version(currentVersion, currentSpreadsheet.deepCopy(), 0)); // Save initial version
 
+
             // Check for unique range names
             checkUniqueRangeNames();
 

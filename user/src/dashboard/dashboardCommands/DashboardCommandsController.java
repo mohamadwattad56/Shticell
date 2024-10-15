@@ -96,8 +96,7 @@ public class DashboardCommandsController {
 
 
 
-
-    private void requestPermission(String sheetName, String requestedPermission) {
+    private void requestPermission(String sheetName, String requestedPermission, String uploaderName) {
         OkHttpClient client = new OkHttpClient();
         String url = "http://localhost:8080/server_Web/requestPermission";
 
@@ -123,6 +122,8 @@ public class DashboardCommandsController {
                 Platform.runLater(() -> {
                     if (response.isSuccessful()) {
                         System.out.println("Permission request submitted successfully!");
+                        mainDashboardController.fetchSheetPermissions(sheetName, uploaderName);  // Refresh the permissions table
+
                     } else {
                         System.out.println("Failed to request permission: " + response.message());
                     }
@@ -155,18 +156,6 @@ public class DashboardCommandsController {
     }
 
 
-    private void disableEditingFeatures() {
-        System.out.println("Disabling editing features for READER permission");
-
-        // Ensure this runs on the JavaFX Application thread
-        Platform.runLater(() -> {
-            System.out.println("Inside Platform.runLater for disableEditingFeatures");
-            mainDashboardController.getAppController().getSpreadsheetController().disableEditing();
-            mainDashboardController.getAppController().getHeadController().disableEditing();
-        });
-    }
-
-
 
     private void handleRequestPermission() {
         System.out.println("Request permission clicked.");
@@ -190,7 +179,7 @@ public class DashboardCommandsController {
                 System.out.println("User chose permission type: " + permissionType);
 
                 // Call the method to request the permission
-                requestPermission(sheetName, permissionType);
+                requestPermission(sheetName, permissionType,selectedSheet.getUploader());
             });
         } else {
             System.out.println("No sheet selected.");
@@ -367,6 +356,8 @@ public class DashboardCommandsController {
 
                         // Optionally show a message to the owner
                         showSuccessHint("Request " + decision + "d for user: " + request.getUsername());
+                        mainDashboardController.fetchSheetPermissions(request.getSheetName(), mainDashboardController.getDashboardHeaderController().getDashUserName());  // Refresh the permissions table
+
                     } else {
                         System.out.println("Failed to " + decision + " permission: " + response.message());
                     }

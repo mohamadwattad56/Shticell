@@ -183,4 +183,11 @@ public class SpreadsheetManagerDTO {
     }
 
 
+    public void setInitialCellsModifiers(String uploaderName) {
+        for (CellDTO cell : spreadsheetDTO.getCells()) {
+            if (!cell.getSourceValue().equals("EMPTY")) {
+                cell.setLastModifiedBy(uploaderName);
+            }
+        }
+    }
 }

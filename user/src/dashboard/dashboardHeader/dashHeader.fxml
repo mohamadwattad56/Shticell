@@ -8,7 +8,7 @@
 <?import javafx.scene.layout.VBox?>
 
 
-<VBox fx:id="headerVBox" alignment="TOP_CENTER" prefHeight="88.0" prefWidth="600.0" spacing="10.0" xmlns="http://javafx.com/javafx/22" xmlns:fx="http://javafx.com/fxml/1" fx:controller="dashboard.dashboardHeader.DashboardHeaderController">
+<VBox fx:id="headerVBox" alignment="TOP_CENTER" prefHeight="88.0" prefWidth="600.0" spacing="10.0" xmlns="http://javafx.com/javafx/22" xmlns:fx="http://javafx.com/fxml/1" stylesheets="@../../resources/styles.css" fx:controller="dashboard.dashboardHeader.DashboardHeaderController">
    <!-- Add an HBox at the top for the label on the left -->
    <children>
       <HBox alignment="TOP_LEFT" spacing="10.0" HBox.hgrow="ALWAYS">

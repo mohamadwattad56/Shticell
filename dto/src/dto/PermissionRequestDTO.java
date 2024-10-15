@@ -3,7 +3,7 @@ package dto;
 public class PermissionRequestDTO {
     private String username;
     private String permissionType;
-    private RequestStatus requestStatus; ///TODO : Change to enum pending/approved/denied
+    private RequestStatus requestStatus;
     private final String sheetName;
 
     public enum RequestStatus {

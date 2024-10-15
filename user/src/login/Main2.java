@@ -26,7 +26,7 @@ public class Main2 extends Application {
         loginController.setPrimaryStage(primaryStage);
         // Set the title and scene
         primaryStage.setTitle("Login");
-        Scene scene = new Scene(root);
+        Scene scene = new Scene(root,600,400);
         primaryStage.setScene(scene);
 
         // Show the login window
