@@ -33,6 +33,20 @@ public class CellDTO {
         this.backgroundColor = backgroundColor;
     }
 
+    // Constructor with all parameters
+    public CellDTO(String cellId, Object sourceValue, Object effectiveValue, CellType type, int lastModifiedVersion, List<String> dependencies, List<String> dependents, String textColor, String backgroundColor, String lastModifiedBy) {
+        this.cellId = cellId;
+        this.sourceValue = sourceValue;
+        this.effectiveValue = effectiveValue;
+        this.type = type;
+        this.lastModifiedVersion = lastModifiedVersion;
+        this.dependencies = dependencies;
+        this.dependents = dependents;
+        this.textColor = textColor;
+        this.backgroundColor = backgroundColor;
+        this.lastModifiedBy = lastModifiedBy;
+    }
+
     // Overloaded constructor with default text and background colors
     public CellDTO(String cellId, Object sourceValue, Object effectiveValue, CellType type, int lastModifiedVersion, List<String> dependencies, List<String> dependents) {
         this(cellId, sourceValue, effectiveValue, type, lastModifiedVersion, dependencies, dependents, "black", "white"); // Default colors

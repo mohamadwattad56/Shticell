@@ -5,6 +5,7 @@ import dashboard.chat.main.ChatAppMainController;
 import dashboard.mainDashboardController.MainDashboardController;
 import gridPageController.mainController.appController;
 import httputils.HttpClientUtil;
+import jakarta.servlet.http.HttpServletResponse;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
@@ -19,7 +20,6 @@ import javafx.scene.control.TextField;
 import javafx.scene.input.KeyEvent;
 import javafx.stage.Stage;
 import okhttp3.*;
-
 import java.io.IOException;
 
 import static httputils.Constants.LOGIN_PAGE;
@@ -111,18 +111,12 @@ public class LoginController {
             // Load the main dashboard FXML file
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/dashboard/mainDashboardController/mainDashboard.fxml"));
             Parent dashboardRoot = loader.load();
-            System.out.println("FXML successfully loaded: " + (dashboardRoot != null));
 
             // Get the controller and set the username
             MainDashboardController dashboardController = loader.getController();
             if (dashboardController != null) {
-                dashboardController.setDashUserName(username);  // Set the username
-            } else {
-                System.out.println("Dashboard Controller is null!");
+                dashboardController.setDashUserName(username);
             }
-
-
-
 
             // Create a new stage for the dashboard
             Stage dashboardStage = new Stage();
@@ -130,7 +124,32 @@ public class LoginController {
             Scene dashboardScene = new Scene(dashboardRoot);
             dashboardStage.setScene(dashboardScene);
 
-            // Show the new stage (dashboard)
+            // Set the on-close request for the dashboard window
+            dashboardStage.setOnCloseRequest(event -> {
+                System.out.println("Dashboard is closing! Removing user from list...");
+
+                // Send an HTTP request to remove the user from the set
+                String finalUrl = "http://localhost:8080/server_Web/removeuser";  // Update with the actual URL
+                HttpClientUtil.runAsync(finalUrl, new okhttp3.Callback() {
+                    @Override
+                    public void onFailure(@NotNull okhttp3.Call call, @NotNull IOException e) {
+                        System.out.println("Failed to remove user: " + e.getMessage());
+                    }
+
+                    @Override
+                    public void onResponse(@NotNull okhttp3.Call call, @NotNull okhttp3.Response response) throws IOException {
+                        System.out.println("Remove User Servlet Response Code: " + response.code());
+                        if (response.code() == HttpServletResponse.SC_OK) {
+                            System.out.println("User removed successfully.");
+                        } else {
+                            System.out.println("Failed to remove user. Response code: " + response.code());
+                        }
+                    }
+                });
+            });
+
+
+            // Show the dashboard stage
             dashboardStage.show();
 
             // Close the login window
@@ -141,6 +160,9 @@ public class LoginController {
             errorMessageProperty.set("Failed to load the dashboard.");
         }
     }
+
+
+
 
 
     // Clears the error message when the user types in the username field

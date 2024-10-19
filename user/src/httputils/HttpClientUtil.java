@@ -1,6 +1,8 @@
 package httputils;
 
 import okhttp3.*;
+import utils.ServletUtils;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.function.Consumer;
@@ -20,6 +22,7 @@ public class HttpClientUtil {
 
     public static void removeCookiesOf(String domain) {
         simpleCookieManager.removeCookiesOf(domain);
+
     }
 
     public static void runAsync(String finalUrl, Callback callback) {

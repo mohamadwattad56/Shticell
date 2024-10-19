@@ -204,10 +204,10 @@ public class SpreadsheetManager implements Engine,Cloneable  {
 
 
 
-    public void loadSpreadsheet(String filePath) {
+    public void loadSpreadsheet(String filePath, String uploaderName) {
         try {
             // Load spreadsheet from XML
-            currentSpreadsheet.loadFromXml(filePath);
+            currentSpreadsheet.loadFromXml(filePath,uploaderName);
             isSheetLoaded = true; // Mark as loaded
             currentVersion = 1;
             versionHistory.clear();
@@ -462,5 +462,9 @@ public class SpreadsheetManager implements Engine,Cloneable  {
 
     public int getCurrentVersion() {
         return currentVersion;
+    }
+
+    public void setLastModifiedBy(String cellId,String lastModifiedBy) {
+            this.currentSpreadsheet.getCellById(cellId).setLastModifiedBy(lastModifiedBy);
     }
 }

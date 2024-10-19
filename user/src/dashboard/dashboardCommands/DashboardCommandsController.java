@@ -79,22 +79,32 @@ public class DashboardCommandsController {
 
     private void switchToChat() {
         try {
-            // Load the ChatClient's FXML and controller into the current window
+            // Load the ChatClient's FXML and controller
             FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/dashboard/chat/main/chat-app-main.fxml"));
             Parent chatRoot = fxmlLoader.load();
             ChatAppMainController chatAppMainController = fxmlLoader.getController();
 
-            // Set the chat panel in the main layout (replace the current view)
-            mainDashboardController.getMainLayout().setCenter(chatRoot);
+            // Set up the new stage (popup window)
+            Stage chatStage = new Stage();
+            chatStage.setTitle("Chat Room");
+
+            // Set the chatRoot in a new scene for the popup window
+            Scene chatScene = new Scene(chatRoot);
+            chatStage.setScene(chatScene);
 
             // Initialize chat
             chatAppMainController.setMainDashboardController(mainDashboardController);
             chatAppMainController.updateUserName(this.mainDashboardController.getDashboardHeaderController().getDashUserName());
+            chatAppMainController.loadChatRoomPage();
             chatAppMainController.switchToChatRoom();
+
+            // Show the chat window
+            chatStage.show();
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
+
 
 
 

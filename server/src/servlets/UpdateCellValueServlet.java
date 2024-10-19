@@ -63,6 +63,7 @@ public class UpdateCellValueServlet extends HttpServlet {
                 // Update the cell value and pass the current user who made the change
                 spreadsheetManager.updateCellValue(cellIdentifier, newValue, oldValue, userName, true);
 
+                spreadsheetManager.setLastModifiedBy(cellIdentifier,userName);
                 // Generate the updated cell DTO with the last modified user
                 CellUpdateDTO cellUpdateDTO = spreadsheetManager.generateCellUpdateDTO(cellIdentifier, userName);
 

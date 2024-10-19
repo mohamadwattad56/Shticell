@@ -10,6 +10,8 @@ abstract public class CellImpl implements Cell, Cloneable {
     protected String textColor;
     protected String backgroundColor;
 
+    private String lastModifiedBy;
+
     // Default constructor - sets text and background color to black and white
     public CellImpl(Object sourceValue) {
         this(sourceValue, "black", "white");  // Calls the other constructor with default colors
@@ -80,5 +82,11 @@ abstract public class CellImpl implements Cell, Cloneable {
 
     public void setBackgroundColor(String backgroundColor) {
         this.backgroundColor = backgroundColor;
+    }
+    public String getLastModifiedBy() {
+        return lastModifiedBy;
+    }
+    public void setLastModifiedBy(String lastModifiedBy) {
+        this.lastModifiedBy = lastModifiedBy;
     }
 }

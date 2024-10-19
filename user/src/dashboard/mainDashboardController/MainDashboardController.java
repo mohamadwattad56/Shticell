@@ -1,17 +1,16 @@
 package dashboard.mainDashboardController;
 
 import com.google.gson.Gson;
-import dashboard.chat.main.ChatAppMainController;
 import dashboard.dashboardCommands.DashboardCommandsController;
 import dashboard.dashboardHeader.DashboardHeaderController;
 import dashboard.dashboardTables.DashboardTablesController;
 import dto.PermissionRequestDTO;
 import dto.SpreadsheetManagerDTO;
+import javafx.animation.Animation;
 import javafx.application.Platform;
+import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
@@ -19,7 +18,6 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.layout.StackPane;
-import javafx.stage.Stage;
 import okhttp3.*;
 import gridPageController.mainController.appController;
 
@@ -30,8 +28,14 @@ import java.net.URLEncoder;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
+import javafx.util.Duration;
+
+
 
 public class MainDashboardController {
+    private Timeline fetchTimeline;
 
     @FXML
     private BorderPane mainLayout;  // Root layout from the FXML
@@ -47,60 +51,10 @@ public class MainDashboardController {
     private appController appController;  // Declare appController as a field
     private BorderPane dashboardState;  // Store the current state of the dashboard
 
-    public void saveCurrentDashboardState() {
-        dashboardState = new BorderPane();
-        dashboardState.setTop(this.getMainLayout().getTop());
-        dashboardState.setBottom(getMainLayout().getBottom());
-        dashboardState.setLeft(getMainLayout().getLeft());
-        dashboardState.setRight(getMainLayout().getRight());
-        dashboardState.setCenter(getMainLayout().getCenter());  // Save the current center layout (dashboard)
+    // Method to handle when the dashboard is closed
+    public void onDashboardClose() {
+
     }
-
-
-    /*@FXML
-    public void initialize() {
-        try {
-            // Load the header
-            FXMLLoader headerLoader = new FXMLLoader(getClass().getResource("/dashboard/dashboardHeader/dashHeader.fxml"));
-            VBox header = headerLoader.load();  // Load the header FXML
-            dashboardHeaderController = headerLoader.getController();  // Get the controller
-            mainLayout.setTop(header);  // Set the header in the top region
-
-            // Set the mainDashboardController in dashboardHeaderController
-            dashboardHeaderController.setMainDashboardController(this);
-
-            // Now that the mainDashboardController is set, start fetching files
-            dashboardHeaderController.startFetchingFiles();  // Call this after the controller is set
-
-            // Load the tables
-            FXMLLoader tablesLoader = new FXMLLoader(getClass().getResource("/dashboard/dashboardTables/dashTables.fxml"));
-            VBox tables = tablesLoader.load();  // Load the tables FXML
-            dashboardTablesController = tablesLoader.getController();  // Get the controller
-            centerHBox.getChildren().add(tables);  // Add the tables to the centerHBox
-
-            // Load the commands
-            FXMLLoader commandsLoader = new FXMLLoader(getClass().getResource("/dashboard/dashboardCommands/dashCommands.fxml"));
-            VBox commands = commandsLoader.load();  // Load the commands FXML
-            dashboardCommandsController = commandsLoader.getController();  // Get the controller
-            centerHBox.getChildren().add(commands);  // Add the commands to the centerHBox
-
-            // Load the appController (Main layout for the grid page)
-            FXMLLoader appLoader = new FXMLLoader(getClass().getResource("/gridPageController/mainController/MainLayout.fxml"));
-            StackPane appPane = appLoader.load();  // Load the main layout FXML
-            appController = appLoader.getController();  // Get the appController
-
-            // Inject the appController into necessary subcomponents if needed
-            appController.setMainDashboardController(this);
-            dashboardTablesController.setMainDashboardController(this);
-            dashboardCommandsController.setMainController(this);
-
-            System.out.println("Header, Tables, and Commands loaded correctly!");
-            System.out.println("AppController initialized: " + (appController != null));
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }*/
 
     @FXML
     public void initialize() {
@@ -179,10 +133,38 @@ public class MainDashboardController {
 
     // Called when a sheet is selected in the table
     public void handleSheetSelection(String sheetName, String uploader) throws UnsupportedEncodingException {
-        fetchSheetPermissions(sheetName,uploader);
+        // Initialize or restart the periodic fetch
+        startPeriodicFetch(sheetName, uploader);
+    }
+    private void stopPeriodicFetch() {
+        if (fetchTimeline != null && fetchTimeline.getStatus() == Animation.Status.RUNNING) {
+            fetchTimeline.stop();  // Stop the timeline when it's no longer needed
+        }
     }
 
+    private void startPeriodicFetch(String sheetName, String uploaderName) {
+        // Stop any existing fetch timeline to avoid multiple fetching loops
+        if (fetchTimeline != null) {
+            fetchTimeline.stop();
+            System.out.println("Stopping existing timeline...");
+        }
+
+        // Create a new timeline to fetch data every 200ms
+        fetchTimeline = new Timeline(new KeyFrame(Duration.millis(200), event -> {
+            System.out.println("Fetching sheet permissions for sheet: " + sheetName + ", uploader: " + uploaderName);
+            fetchSheetPermissions(sheetName, uploaderName);
+        }));
+
+        fetchTimeline.setCycleCount(Timeline.INDEFINITE);  // Run indefinitely
+        fetchTimeline.play();  // Start fetching
+        System.out.println("Timeline started for periodic fetch.");
+    }
+
+
+
     public void fetchSheetPermissions(String sheetName, String uploaderName) {
+        System.out.println("Inside fetchSheetPermissions for: " + sheetName + " by " + uploaderName);
+
         OkHttpClient client = new OkHttpClient();
         String url = "http://localhost:8080/server_Web/getAllPermissions?sheetName=" + sheetName + "&uploaderName=" + uploaderName;
 
@@ -199,17 +181,101 @@ public class MainDashboardController {
 
             @Override
             public void onResponse(Call call, Response response) throws IOException {
-                String responseData = response.body().string();
+                try {
+                    String responseData = response.body().string();
+                    System.out.println("Response Data: " + responseData);  // Log response data
 
-                // Parse the response into PermissionRequestDTO objects
-                Gson gson = new Gson();
-                PermissionRequestDTO[] permissionInfoArray = gson.fromJson(responseData, PermissionRequestDTO[].class);
+                    Gson gson = new Gson();
+                    PermissionRequestDTO[] permissionInfoArray = gson.fromJson(responseData, PermissionRequestDTO[].class);
 
-                // Update the TableView on the JavaFX thread and pass uploaderName to ensure owner is included
-                Platform.runLater(() -> populatePermissionsTable(Arrays.asList(permissionInfoArray), uploaderName));
+                    // Log permissions
+                    System.out.println("Permissions Parsed: " + Arrays.toString(permissionInfoArray));
+
+                    Platform.runLater(() -> {
+                        System.out.println("Updating permissions table and tableView1...");
+                        updatePermissionsTable(Arrays.asList(permissionInfoArray), uploaderName);
+                        updateTableView1Permissions(Arrays.asList(permissionInfoArray), uploaderName, sheetName);
+                        System.out.println("Tables updated successfully.");
+                    });
+                } catch (Exception e) {
+                    e.printStackTrace();  // Catch any exceptions
+                    System.out.println("Error in onResponse: " + e.getMessage());
+                }
             }
+
         });
     }
+
+
+    private void updatePermissionsTable(List<PermissionRequestDTO> permissions, String uploaderName) {
+        TableView<DashboardTablesController.PermissionRowData> tableView2 = this.dashboardTablesController.getTableView2(); // Assuming you have this method to get tableView2
+
+        // Set up the columns (if not done already)
+        TableColumn<DashboardTablesController.PermissionRowData, String> usernameCol = new TableColumn<>("Username");
+        TableColumn<DashboardTablesController.PermissionRowData, String> permissionTypeCol = new TableColumn<>("Permission Type");
+        TableColumn<DashboardTablesController.PermissionRowData, String> approvalCol = new TableColumn<>("Approved");
+
+        usernameCol.setCellValueFactory(new PropertyValueFactory<>("userName"));
+        permissionTypeCol.setCellValueFactory(new PropertyValueFactory<>("permissionType"));
+        approvalCol.setCellValueFactory(new PropertyValueFactory<>("status"));
+
+        // Create a list to hold the new data
+        List<DashboardTablesController.PermissionRowData> newDataList = permissions.stream()
+                .map(permission -> new DashboardTablesController.PermissionRowData(
+                        permission.getUsername(),
+                        permission.getPermissionType(),
+                        permission.getRequestStatus().name())
+                ).collect(Collectors.toList());
+
+        // Ensure the owner is always in the list
+        DashboardTablesController.PermissionRowData ownerRow = new DashboardTablesController.PermissionRowData(uploaderName, "OWNER", "Approved");
+        newDataList.add(0, ownerRow);  // Add the owner to the beginning of the list
+
+        // Compare the new data with the current data in the table
+        if (!tableView2.getItems().equals(newDataList)) {
+            // If the data is different, update the table
+            tableView2.getItems().setAll(newDataList);
+        }
+    }
+
+    private void updateTableView1Permissions(List<PermissionRequestDTO> permissions, String uploaderName, String sheetName) {
+        TableView<DashboardTablesController.SheetRowData> tableView1 = this.dashboardTablesController.getTableView1();  // Get TableView1
+        ObservableList<DashboardTablesController.SheetRowData> currentItems = tableView1.getItems();  // Current items in the table
+
+        // Create the new data based on the permissions
+        List<DashboardTablesController.SheetRowData> updatedData = permissions.stream()
+                .map(permission -> {
+                    String permissionType = permission.getRequestStatus().name();
+                    return new DashboardTablesController.SheetRowData(
+                            uploaderName,  // Use the actual uploader for the sheet
+                            permission.getSheetName(),  // Correct sheet name
+                            "Sheet Size Placeholder",  // You can replace this with the actual sheet size if available
+                            permissionType);  // Permission type
+                })
+                .collect(Collectors.toList());
+
+        // Stop periodic fetch while updating the table to prevent conflicts
+        stopPeriodicFetch();
+
+        // Update the current data without adding duplicates or incorrect entries
+        for (DashboardTablesController.SheetRowData newData : updatedData) {
+            boolean exists = currentItems.stream()
+                    .anyMatch(existingData ->
+                            existingData.getSheetName().equals(newData.getSheetName()) &&
+                                    existingData.getUploader().equals(newData.getUploader()) &&
+                                        existingData.getPermission().equals(newData.getPermission()));
+
+            // If the row doesn't exist, add it
+            if (!exists) {
+                currentItems.add(newData);
+            }
+        }
+
+        // Start periodic fetch again after updating
+        startPeriodicFetch(sheetName, uploaderName);
+    }
+
+
 
 
 

@@ -12,7 +12,7 @@ import chat.users.UserManager;
 import utils.ServletUtils;
 import utils.SessionUtils;
 
-    @WebServlet("/login")
+@WebServlet("/login")
 public class LoginServlet extends HttpServlet {
 
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)

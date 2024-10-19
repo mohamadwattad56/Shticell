@@ -47,7 +47,7 @@ public class FileUploadServlet extends HttpServlet {
             SpreadsheetManager spreadsheetManager = new SpreadsheetManager();
             try {
                 // Validate and load the spreadsheet (checks from Stage 1 and 2 happen here)
-                spreadsheetManager.loadSpreadsheet(filePath);
+                spreadsheetManager.loadSpreadsheet(filePath,uploaderName);
                 spreadsheetManager.initializeOwner(uploaderName);
                 // Check for unique sheet name
                 String sheetName = spreadsheetManager.getSpreadsheetName();

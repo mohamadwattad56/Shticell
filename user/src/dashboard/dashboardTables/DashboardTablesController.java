@@ -58,6 +58,10 @@ public class DashboardTablesController {
         return sheetData;
     }
 
+    public TableView<SheetRowData> getTableView1() {
+        return tableView1;
+    }
+
     // Data class for tableView1 (sheets)
     public static class SheetRowData {
         private final String uploader;

@@ -87,7 +87,7 @@ public class Spreadsheet implements Serializable,Cloneable {
         }
     }
 
-    public void loadFromXml(String filePath) {
+    public void loadFromXml(String filePath,String uploaderName) {
         try {
             JAXBContext context = JAXBContext.newInstance(STLSheet.class);
             Unmarshaller unmarshaller = context.createUnmarshaller();
@@ -121,6 +121,7 @@ public class Spreadsheet implements Serializable,Cloneable {
                 if (!isFunction(cell.getSTLOriginalValue())) {
                     String cellId = cell.getCellId();
                     setCellValue(cellId, cell.getSTLOriginalValue());
+                    this.cells.get(cellId).setLastModifiedBy(uploaderName);
                 } else {
                     functionCells.add(cell);  // Add function cells to process later
                 }
@@ -154,6 +155,7 @@ public class Spreadsheet implements Serializable,Cloneable {
                         setCellValue(cellId, originalValue);  // This will now dynamically fetch any ranges needed
                         iterator.remove();
                         progress = true;
+                        this.cells.get(cellId).setLastModifiedBy(uploaderName);
                     }
                     catch (RangeDoesNotExist e) {
                         throw new RangeDoesNotExist("Error calculating the cell " + cellId +" :" + e.getMessage());
@@ -267,6 +269,7 @@ public class Spreadsheet implements Serializable,Cloneable {
 
         // Process the cell change (updating the spreadsheet data)
         int affectedCellsCount = processCellChange(cellId, tempCell, value, currentVersion);
+
 
         return affectedCellsCount;
     }
@@ -568,7 +571,8 @@ public class Spreadsheet implements Serializable,Cloneable {
                             dependencies,
                             dependents,
                             cell.getTextColor(),
-                            cell.getBackgroundColor()
+                            cell.getBackgroundColor(),
+                            cell.getLastModifiedBy()
                     );
                 })
                 .collect(Collectors.toList());
@@ -609,7 +613,8 @@ public class Spreadsheet implements Serializable,Cloneable {
                         dependencies,
                         dependents,
                         cell.getTextColor(),
-                        cell.getBackgroundColor()
+                        cell.getBackgroundColor(),
+                        cell.getLastModifiedBy()
                 );
             } else {
                 return new CellDTO(
