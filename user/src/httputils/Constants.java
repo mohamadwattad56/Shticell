@@ -25,11 +25,20 @@ public class Constants {
     // API Endpoints
     public static final String LOGIN_PAGE = FULL_SERVER_PATH + "/login";  // Login endpoint
     public static final String UPLOAD_FILE = FULL_SERVER_PATH + "/getUploadedFiles";
-    public static final String USERS_LIST = FULL_SERVER_PATH + "/users";  // Endpoint to fetch user list
+    public static final String USERS_LIST = FULL_SERVER_PATH + "/userslist";  // Endpoint to fetch user list
     public static final String LOGOUT = FULL_SERVER_PATH + "/logout";  // Logout endpoint
     public static final String SHEET_DATA = FULL_SERVER_PATH + "/sheet";  // Endpoint for sheet data
     public static final String SHEET_UPDATE = FULL_SERVER_PATH + "/sheet/update";  // Endpoint for updating sheet
 
     // GSON instance for JSON parsing
     public static final Gson GSON_INSTANCE = new Gson();
+
+
+
+    //Chat
+    public final static String SEND_CHAT_LINE = FULL_SERVER_PATH + "/sendChat";
+    // fxml locations
+    public final static String CHAT_ROOM_FXML_RESOURCE_LOCATION = "/chat/client/component/chatroom/chat-room-main.fxml";
+    public final static String CHAT_LINES_LIST = FULL_SERVER_PATH + "/chat";
+
 }

@@ -6,23 +6,39 @@
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
-
+<?import javafx.scene.layout.Region?>
 
 <VBox fx:id="headerVBox" alignment="TOP_CENTER" prefHeight="88.0" prefWidth="600.0" spacing="10.0" xmlns="http://javafx.com/javafx/22" xmlns:fx="http://javafx.com/fxml/1" stylesheets="@../../resources/styles.css" fx:controller="dashboard.dashboardHeader.DashboardHeaderController">
-   <!-- Add an HBox at the top for the label on the left -->
-   <children>
-      <HBox alignment="TOP_LEFT" spacing="10.0" HBox.hgrow="ALWAYS">
-         <children>
-            <Label fx:id="dashUserName" text="User Name" />
-         </children>
-      </HBox>
-      <Label styleClass="main-title" text="Shticell" />
-      <HBox spacing="10.0" HBox.hgrow="ALWAYS">
-         <children>
-            <Button fx:id="loadFileButton" style="-fx-padding: 3px 8px;" styleClass="custom-button" text="Load File" />
-            <TextField fx:id="filePathField" HBox.hgrow="ALWAYS" promptText="Select file to upload..." />
-            <ProgressBar fx:id="progressBar" prefWidth="200" progress="0.0" visible="false" />
-         </children>
-      </HBox>
-   </children>
+
+   <!-- Title in the center, username on the far left -->
+   <HBox alignment="CENTER_LEFT" spacing="10.0" HBox.hgrow="ALWAYS">
+      <children>
+         <!-- Username on the far left -->
+         <Label fx:id="dashUserName" text="User Name" style="-fx-text-fill: grey;" />
+
+         <!-- Spacing node to push the title to the center -->
+         <Region HBox.hgrow="ALWAYS" />
+
+         <!-- Centered title -->
+         <Label styleClass="main-title" text="Shticell" />
+
+         <Region HBox.hgrow="ALWAYS" />
+      </children>
+   </HBox>
+
+
+   <!-- Success hint placed under title and username -->
+   <HBox alignment="CENTER" spacing="10.0" HBox.hgrow="ALWAYS">
+   <Label fx:id="successHintLabel" text="Success!" visible="false" style="-fx-background-color: green; -fx-text-fill: white; -fx-padding: 5px;" />
+   </HBox>
+
+
+   <!-- Load file button and file path below -->
+   <HBox spacing="10.0" HBox.hgrow="ALWAYS">
+      <children>
+         <Button fx:id="loadFileButton" style="-fx-padding: 3px 8px;" styleClass="custom-button" text="Load File" />
+         <TextField fx:id="filePathField" HBox.hgrow="ALWAYS" promptText="Select file to upload..." />
+         <ProgressBar fx:id="progressBar" prefWidth="200" progress="0.0" visible="false" />
+      </children>
+   </HBox>
 </VBox>

@@ -1,6 +1,7 @@
 package dashboard.mainDashboardController;
 
 import com.google.gson.Gson;
+import dashboard.chat.main.ChatAppMainController;
 import dashboard.dashboardCommands.DashboardCommandsController;
 import dashboard.dashboardHeader.DashboardHeaderController;
 import dashboard.dashboardTables.DashboardTablesController;
@@ -9,6 +10,7 @@ import dto.SpreadsheetManagerDTO;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
@@ -43,8 +45,19 @@ public class MainDashboardController {
 
     @FXML
     private appController appController;  // Declare appController as a field
+    private BorderPane dashboardState;  // Store the current state of the dashboard
 
-    @FXML
+    public void saveCurrentDashboardState() {
+        dashboardState = new BorderPane();
+        dashboardState.setTop(this.getMainLayout().getTop());
+        dashboardState.setBottom(getMainLayout().getBottom());
+        dashboardState.setLeft(getMainLayout().getLeft());
+        dashboardState.setRight(getMainLayout().getRight());
+        dashboardState.setCenter(getMainLayout().getCenter());  // Save the current center layout (dashboard)
+    }
+
+
+    /*@FXML
     public void initialize() {
         try {
             // Load the header
@@ -52,6 +65,12 @@ public class MainDashboardController {
             VBox header = headerLoader.load();  // Load the header FXML
             dashboardHeaderController = headerLoader.getController();  // Get the controller
             mainLayout.setTop(header);  // Set the header in the top region
+
+            // Set the mainDashboardController in dashboardHeaderController
+            dashboardHeaderController.setMainDashboardController(this);
+
+            // Now that the mainDashboardController is set, start fetching files
+            dashboardHeaderController.startFetchingFiles();  // Call this after the controller is set
 
             // Load the tables
             FXMLLoader tablesLoader = new FXMLLoader(getClass().getResource("/dashboard/dashboardTables/dashTables.fxml"));
@@ -70,8 +89,8 @@ public class MainDashboardController {
             StackPane appPane = appLoader.load();  // Load the main layout FXML
             appController = appLoader.getController();  // Get the appController
 
-            // Now, inject the appController into the necessary subcomponents if needed
-            dashboardHeaderController.setMainDashboardController(this);
+            // Inject the appController into necessary subcomponents if needed
+            appController.setMainDashboardController(this);
             dashboardTablesController.setMainDashboardController(this);
             dashboardCommandsController.setMainController(this);
 
@@ -81,7 +100,52 @@ public class MainDashboardController {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }*/
+
+    @FXML
+    public void initialize() {
+        try {
+            // Load the header
+            FXMLLoader headerLoader = new FXMLLoader(getClass().getResource("/dashboard/dashboardHeader/dashHeader.fxml"));
+            VBox header = headerLoader.load();  // Load the header FXML
+            dashboardHeaderController = headerLoader.getController();  // Get the controller
+            mainLayout.setTop(header);  // Set the header in the top region
+
+            // Set the mainDashboardController in dashboardHeaderController
+            dashboardHeaderController.setMainDashboardController(this);
+
+            // Now that the mainDashboardController is set, start fetching files
+            dashboardHeaderController.startFetchingFiles();  // Call this after the controller is set
+
+            // Load the tables
+            FXMLLoader tablesLoader = new FXMLLoader(getClass().getResource("/dashboard/dashboardTables/dashTables.fxml"));
+            VBox tables = tablesLoader.load();  // Load the tables FXML
+            dashboardTablesController = tablesLoader.getController();  // Get the controller
+            centerHBox.getChildren().add(tables);  // Add the tables to the centerHBox
+
+            // Load the commands
+            FXMLLoader commandsLoader = new FXMLLoader(getClass().getResource("/dashboard/dashboardCommands/dashCommands.fxml"));
+            VBox commands = commandsLoader.load();  // Load the commands FXML
+            dashboardCommandsController = commandsLoader.getController();  // Get the controller
+            centerHBox.getChildren().add(commands);  // Add the commands to the centerHBox
+
+
+            // Load the appController (Main layout for the grid page)
+            FXMLLoader appLoader = new FXMLLoader(getClass().getResource("/gridPageController/mainController/MainLayout.fxml"));
+            StackPane appPane = appLoader.load();  // Load the main layout FXML
+            appController = appLoader.getController();  // Get the appController
+
+            // Inject the appController into necessary subcomponents if needed
+            appController.setMainDashboardController(this);
+            dashboardTablesController.setMainDashboardController(this);
+            dashboardCommandsController.setMainController(this);
+
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
+
 
 
     public appController getAppController() {
@@ -222,6 +286,7 @@ public class MainDashboardController {
 
                         // Now that we have the SpreadsheetManagerDTO, pass it to displaySheet with the user's permission
                         displaySheet(spreadsheetManagerDTO, userPermission);  // Pass the permission
+
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
@@ -233,7 +298,8 @@ public class MainDashboardController {
 
 
 
-    private void displaySheet(SpreadsheetManagerDTO spreadsheetManagerDTO, String userPermission) {
+
+    /*private void displaySheet(SpreadsheetManagerDTO spreadsheetManagerDTO, String userPermission) {
         try {
             System.out.println("Displaying sheet: " + spreadsheetManagerDTO.getSpreadsheetDTO().getSheetName());
 
@@ -273,7 +339,43 @@ public class MainDashboardController {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }*/
+
+    private void displaySheet(SpreadsheetManagerDTO spreadsheetManagerDTO, String userPermission) {
+        try {
+            System.out.println("Displaying sheet: " + spreadsheetManagerDTO.getSpreadsheetDTO().getSheetName());
+
+            // Clear both the top (header) and center content before loading the sheet
+            mainLayout.setTop(null);  // Remove the dashboard header before loading the sheet header
+            mainLayout.setCenter(null);  // Clear any existing content in the center
+
+            // Load the appController layout (MainLayout.fxml)
+            FXMLLoader appLoader = new FXMLLoader(getClass().getResource("/gridPageController/mainController/MainLayout.fxml"));
+            StackPane appPane = appLoader.load();
+            appController = appLoader.getController();
+            appController.setMainDashboardController(this);
+
+            // Set the spreadsheet data in the appController to display
+            appController.getSpreadsheetController().loadSpreadsheetFromDTO(spreadsheetManagerDTO, userPermission);
+
+            // Disable editing features if the user is not a WRITER
+            if (userPermission.equals("READER")) {
+                System.out.println("Disabling editing features for READER permission.");
+                disableEditingFeatures();
+            } else {
+                System.out.println("Permission allows editing: " + userPermission);
+            }
+
+            // Replace the dashboard content with the sheet layout
+            mainLayout.setCenter(appPane);  // Replace the center with the sheet
+            mainLayout.setTop(null);  // Make sure the top region is null (to prevent any header overlap)
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
+
+
 
 
 

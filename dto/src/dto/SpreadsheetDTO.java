@@ -18,6 +18,9 @@ public class SpreadsheetDTO {
     private final int rowsHeightUnits;
     private Map<String, Set<String>> ranges = new HashMap<>();
 
+    public Map<String, Set<String>> getRanges() {
+        return ranges;
+    }
 
     public SpreadsheetDTO(String sheetName, List<CellDTO> cells, int rows, int columns, int columnWidthUnits, int rowsHeightUnits, Map<String, Set<String>> ranges) {
         this.sheetName = sheetName;
@@ -45,10 +48,10 @@ public class SpreadsheetDTO {
         return columns;
     }
 
-    public double getRowHeight() {
+    public int getRowHeight() {
         return rowsHeightUnits;
     }
-    public double getColumnWidth() {
+    public int getColumnWidth() {
         return columnWidthUnits;
     }
 

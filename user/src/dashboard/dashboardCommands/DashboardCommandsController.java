@@ -1,6 +1,7 @@
 package dashboard.dashboardCommands;
 
 import com.google.gson.Gson;
+import dashboard.chat.main.ChatAppMainController;
 import dashboard.dashboardTables.DashboardTablesController;
 import dashboard.mainDashboardController.MainDashboardController;
 import dto.PermissionRequestDTO;
@@ -8,6 +9,8 @@ import javafx.animation.FadeTransition;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
@@ -28,32 +31,32 @@ import java.util.stream.Collectors;
 
 public class DashboardCommandsController {
     private MainDashboardController mainDashboardController;
-    private TableView<PermissionRequestDTO> requestTable;  // Make it class-level
+
+    private ChatAppMainController chatAppMainController;
 
     @FXML
-    private Button commandsButton;
+    private Button viewSheetButton;
 
-    private ContextMenu commandsMenu;
+    @FXML
+    private Button requestPermissionButton;
+
+    @FXML
+    private Button acknowledgePermissionButton;
+
+    @FXML
+    private Button chatButton;
+
 
     @FXML
     public void initialize() {
-        commandsMenu = new ContextMenu();
-        fillCommandsMenu();
+        // Set up the button actions
+        viewSheetButton.setText("View Sheet");
+        requestPermissionButton.setText("Request Permission");
+        acknowledgePermissionButton.setText("Acknowledge/Deny Permission");
+        chatButton.setText("Chat");
 
-        // Set up event handler to show the context menu when the button is clicked
-        commandsButton.setOnMouseClicked(event -> {
-            if (event.getButton() == MouseButton.PRIMARY) {
-                commandsMenu.show(commandsButton, event.getScreenX(), event.getScreenY());
-            }
-        });
-    }
-
-    private void fillCommandsMenu() {
-        MenuItem viewSheet = new MenuItem("View sheet");
-        MenuItem requestPermission = new MenuItem("Request permission");
-        MenuItem ackOrDenyPermissionRequest = new MenuItem("Acknowledge/deny permission request");
-
-        viewSheet.setOnAction(event -> {
+        // Set action handlers for each button
+        viewSheetButton.setOnAction(event -> {
             try {
                 handleViewSheet();
             } catch (UnsupportedEncodingException e) {
@@ -61,11 +64,40 @@ public class DashboardCommandsController {
             }
         });
 
-        requestPermission.setOnAction(event -> handleRequestPermission());
-        ackOrDenyPermissionRequest.setOnAction(event -> handleAckOrDenyPermission());
+        requestPermissionButton.setOnAction(event -> handleRequestPermission());
 
-        commandsMenu.getItems().addAll(viewSheet, requestPermission, ackOrDenyPermissionRequest);
+        acknowledgePermissionButton.setOnAction(event -> handleAckOrDenyPermission());
+
+        chatButton.setOnMouseClicked(event -> {
+            if (event.getButton() == MouseButton.PRIMARY) {
+                switchToChat();
+            }
+        });
     }
+
+
+
+    private void switchToChat() {
+        try {
+            // Load the ChatClient's FXML and controller into the current window
+            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/dashboard/chat/main/chat-app-main.fxml"));
+            Parent chatRoot = fxmlLoader.load();
+            ChatAppMainController chatAppMainController = fxmlLoader.getController();
+
+            // Set the chat panel in the main layout (replace the current view)
+            mainDashboardController.getMainLayout().setCenter(chatRoot);
+
+            // Initialize chat
+            chatAppMainController.setMainDashboardController(mainDashboardController);
+            chatAppMainController.updateUserName(this.mainDashboardController.getDashboardHeaderController().getDashUserName());
+            chatAppMainController.switchToChatRoom();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+
+
 
 
     private void handleViewSheet() throws UnsupportedEncodingException {
@@ -388,5 +420,9 @@ public class DashboardCommandsController {
 
     public void setMainController(MainDashboardController mainController) {
         this.mainDashboardController = mainController;
+    }
+
+    public void setChatAppMainController(ChatAppMainController chatAppMainController) {
+        this.chatAppMainController = chatAppMainController; // Set the chat app controller
     }
 }

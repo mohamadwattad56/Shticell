@@ -12,7 +12,12 @@ import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.util.Duration;
@@ -40,6 +45,9 @@ public class DashboardHeaderController {
     @FXML
     private Label dashUserName;
 
+    @FXML
+    private Label successHintLabel;
+
     private Timeline fetchFilesTimeline;
     private Set<String> uploadedFilesSet = new HashSet<>(); // To track added files
     private MainDashboardController mainDashboardController;  // Reference to MainDashboardController
@@ -49,11 +57,11 @@ public class DashboardHeaderController {
     public void initialize() {
         loadFileButton.setOnAction(event -> handleLoadFile());
         // Add Timeline for polling every 2 seconds
-        startFetchingFiles(); // Start fetching the uploaded files every 2 seconds
+       // startFetchingFiles(); // Start fetching the uploaded files every 2 seconds
 
     }
 
-    private void startFetchingFiles() {
+    public void startFetchingFiles() {
         fetchFilesTimeline = new Timeline(new KeyFrame(Duration.seconds(0.5), event -> fetchUploadedFiles()));
         fetchFilesTimeline.setCycleCount(Timeline.INDEFINITE); // Run indefinitely every 2 seconds
         fetchFilesTimeline.play();
@@ -225,37 +233,25 @@ public class DashboardHeaderController {
     }
 
     private void showSuccessHint(String message) {
-        System.out.println("Attempting to show success message: " + message);  // Debugging line
+        // Get the success label from the FXML
+        Label successHintLabel = this.mainDashboardController.getDashboardHeaderController().getSuccessHintLabel();
 
-        // Create the label with the success message
-        Label successLabel = new Label(message);
-        successLabel.setStyle("-fx-background-color: green; -fx-text-fill: white; -fx-padding: 10;");
-        successLabel.setVisible(true);
-
-        VBox header = (VBox) this.mainDashboardController.getMainLayout().getTop();
-        // Add the label to the top of the main layout (or centerHBox, adjust as needed)
-        this.mainDashboardController.getMainLayout().setTop(successLabel);
+        // Set the message and make it visible
+        successHintLabel.setText(message);
+        successHintLabel.setVisible(true);
 
         // Fade the label out after a few seconds
-        FadeTransition fadeTransition = new FadeTransition(Duration.seconds(3), successLabel);
+        FadeTransition fadeTransition = new FadeTransition(Duration.seconds(3), successHintLabel);
         fadeTransition.setFromValue(1.0);
         fadeTransition.setToValue(0.0);
-        fadeTransition.setOnFinished(event -> {
-            successLabel.setVisible(false);
-            this.mainDashboardController.getMainLayout().setTop(header); // Remove the label after fading out
-        });
+        fadeTransition.setOnFinished(event -> successHintLabel.setVisible(false));  // Hide it after fading out
 
         fadeTransition.play();
-
-        System.out.println("Success message added to the UI");  // Debugging line
     }
 
-
-
-
-
-
-
+    private Label getSuccessHintLabel() {
+        return successHintLabel;
+    }
 
 
     public void setMainDashboardController(MainDashboardController mainDashboardController) {

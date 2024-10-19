@@ -13,6 +13,7 @@ public class CellDTO {
     private final List<String> dependencies;
     private final List<String> dependents;
     private String lastModifiedBy;
+    private String temporaryValue;  // Temporary value used in dynamic analysis
 
 
     // New fields for text color and background color
@@ -102,5 +103,16 @@ public class CellDTO {
 
     public void setLastModifiedVersion(int lastModifiedVersion) {
         this.lastModifiedVersion = lastModifiedVersion;
+    }
+    public void setTemporaryValue(String tempValue) {
+        this.temporaryValue = String.valueOf(tempValue);
+    }
+
+    public String getTemporaryValue() {
+        return temporaryValue != null ? temporaryValue : (String) sourceValue;
+    }
+
+    public void clearTemporaryValue() {
+        this.temporaryValue = null;  // Reset the temporary value when done
     }
 }

@@ -52,6 +52,9 @@ public class SpreadsheetController implements Serializable {
     public SpreadsheetManagerDTO getSpreadsheetManagerDTO() {
         return spreadsheetManagerDTO;
     }
+    public void setSpreadsheetManagerDTO(SpreadsheetManagerDTO spreadsheetManagerDTO) {
+        this.spreadsheetManagerDTO = spreadsheetManagerDTO;
+    }
 
     static {
         functionArgCounts.put("PLUS", 2);
@@ -175,106 +178,6 @@ public class SpreadsheetController implements Serializable {
     }
 
 
-/*    @FXML
-    public void initialize() {
-        spreadsheet = new SpreadsheetManager();
-    }*/
-
-    /*public void loadSpreadsheet(String filePath) {
-        Platform.runLater(() -> {
-            try {
-                // Clear existing grid and constraints
-                spreadsheetGrid.getChildren().clear();
-                spreadsheetGrid.getColumnConstraints().clear();
-                spreadsheetGrid.getRowConstraints().clear();
-                BorderPane.clearConstraints(this.appController.getMainContainer());
-
-                // Load the spreadsheet data
-                spreadsheetManagerDTO.loadSpreadsheet(filePath);
-
-                int numberOfRows = getNumberOfRows();
-                int numberOfColumns = getNumberOfColumns();
-                double rowHeight = getRowHeights();
-                double columnWidth = getColumnWidths();
-
-                // Set the size for the grid
-                spreadsheetGrid.setMinSize(columnWidth * (numberOfColumns + 1), rowHeight * (numberOfRows + 1));
-                spreadsheetGrid.setPrefSize(columnWidth * (numberOfColumns + 1), rowHeight * (numberOfRows + 1));
-                spreadsheetGrid.setMaxSize(columnWidth * (numberOfColumns + 1), rowHeight * (numberOfRows + 1));
-
-                spreadsheetGrid.setPadding(new Insets(10, 0, 0, 10));  // Adjust the left padding if necessary
-                spreadsheetGrid.setAlignment(Pos.TOP_LEFT);  // Ensure it doesn't grow to the left
-                spreadsheetGrid.setAlignment(Pos.TOP_CENTER);
-
-                this.appController.getMainContainer().setMinHeight(136 + 335);
-                this.appController.getMainContainer().setMinWidth(200 + 600);
-                BorderPane.setAlignment(this.appController.getMainContainer(),Pos.CENTER_LEFT);
-
-
-                this.appController.getMainContainer().setPrefWidth(columnWidth * (numberOfColumns + 1));
-                this.appController.getMainContainer().setPrefHeight(rowHeight * (numberOfRows + 1));
-               // spreadsheetGrid.setAlignment(Pos.CENTER);
-
-                // Configure the scroll pane to manage overflow
-                this.appController.getScrollPane().setFitToWidth(false);
-
-                // Add column and row constraints dynamically
-                ColumnsAndRowsConstraints(numberOfColumns, columnWidth, numberOfRows, rowHeight);
-
-                // Get the current skin's cell class
-                String cellClass = this.appController.getCellClassForCurrentSkin();
-
-                // Populate the grid with data cells
-                for (int row = 1; row <= numberOfRows; row++) {
-                    for (int col = 1; col <= numberOfColumns; col++) {
-                        String rowLetter = String.valueOf((char) ('A' + (col - 1)));
-                        String columnNumber = String.valueOf(row);
-                        String cellIdentifier = rowLetter + columnNumber;
-
-                        Label cell;
-                        try {
-                            String val = spreadsheetManagerDTO.getCellDTO(cellIdentifier).getEffectiveValue().toString();
-                            String formattedValue = formatCellValue(val);
-
-                            cell = new Label(formattedValue);
-                            cell.setAlignment(Pos.CENTER);
-                            cell.setMaxWidth(Double.MAX_VALUE);
-                            cell.setMaxHeight(Double.MAX_VALUE);
-
-                            cell.getStyleClass().clear();
-                            cell.getStyleClass().add(cellClass);
-                            // Apply the border style immediately
-
-                            // Set entrance animation (fade)
-                            FadeTransition fadeIn = new FadeTransition(Duration.seconds(1), cell);
-                            fadeIn.setFromValue(0);
-                            fadeIn.setToValue(1);
-                            fadeIn.play();
-                            cell.setOnMouseClicked(event -> handleCellClick(cellIdentifier));
-
-                            // Add the cell to the grid
-                            spreadsheetGrid.add(cell, col, row);
-
-                        } catch (Exception e) {
-                            continue;
-                        }
-                    }
-                }
-
-                SetMainContainerSize(columnWidth, numberOfColumns, rowHeight, numberOfRows);
-
-            } catch (IllegalArgumentException e) {
-                appController.showError("File Load Error", e.getMessage());
-            } catch (Exception e) {
-                appController.showError("Unexpected Error", e.getMessage());
-            }
-        });
-    }*/
-
-
-
-
-
 
 
     private void SetMainContainerSize(double columnWidth, int numberOfColumns, double rowHeight, int numberOfRows) {
@@ -345,8 +248,35 @@ public class SpreadsheetController implements Serializable {
             }
         }
     }
+    private String convertToValidHex(String color) {
+        // Ensure the color is at most 6 or 8 characters long for valid CSS colors
+        if (color != null) {
+            if (color.startsWith("#")) {
+                color = color.substring(1);  // Remove the hash (#) symbol
+            }
+
+            // For 6-digit colors (RGB), return as is
+            if (color.length() == 6) {
+                return "#" + color;
+            }
+            // For 8-digit colors (RGBA), return as is
+            else if (color.length() == 8) {
+                return "#" + color.substring(0, 6);  // Take only the RGB part for CSS
+            }
+            // Invalid color length, default to black
+            else {
+                System.out.println("Invalid color format: " + color + ". Defaulting to black.");
+                return "#000000";  // Default to black for invalid colors
+            }
+        }
+        return "#000000";  // Default to black if color is null
+    }
+
+
 
     private void handleCellClick(String cellIdentifier, String userPermission) {
+        System.out.println("Cell clicked: " + cellIdentifier + ", User permission: " + userPermission);
+
         // First, clear all existing highlights except for the first column and row
         for (Node node : spreadsheetGrid.getChildren()) {
             if (GridPane.getColumnIndex(node) != null && GridPane.getRowIndex(node) != null) {
@@ -356,26 +286,35 @@ public class SpreadsheetController implements Serializable {
                 // Skip the first row and column
                 if (rowIndex > 0 && columnIndex > 0) {
                     String currentCellId = getCellIdFromCoordinates(rowIndex, columnIndex);
+                    System.out.println("Processing cell: " + currentCellId + " (Row: " + rowIndex + ", Column: " + columnIndex + ")");
 
                     // Get the current background and text colors of the cell from the data model
                     String backgroundColor = spreadsheetManagerDTO.getCellBackgroundColor(currentCellId);
                     String textColor = spreadsheetManagerDTO.getCellTextColor(currentCellId);
                     String cellClass = this.appController.getCellClassForCurrentSkin();
 
+                    System.out.println("Cell Colors: Background=" + backgroundColor + ", Text=" + textColor + ", Class=" + cellClass);
+
                     // Only change the cell if it has a white background and black text
                     if ((backgroundColor.equals("white") || backgroundColor.equals("#FFFFFF")) &&
                             (textColor.equals("black") || textColor.equals("#000000"))) {
+                        System.out.println("Applying default style to cell: " + currentCellId);
                         node.getStyleClass().clear();
                         node.getStyleClass().add(cellClass);
 
                         // Re-apply borders and text color based on the current skin
-                        node.setStyle("-fx-text-fill: " + (cellClass.equals("dark-cell") ? "#ffffff" : "#000000") + "; -fx-border-color: " + (cellClass.equals("dark-cell") ? "#ffffff" : "#000000") + ";");
+                        node.setStyle("-fx-text-fill: " + (cellClass.equals("dark-cell") ? "#ffffff" : "#000000") +
+                                "; -fx-border-color: " + (cellClass.equals("dark-cell") ? "#ffffff" : "#000000") + ";");
                     } else {
+                        System.out.println("Applying custom style to cell: " + currentCellId);
                         node.getStyleClass().clear();
                         node.getStyleClass().add(cellClass);
 
                         // Re-apply borders and text color based on the model (with correct CSS values)
-                        node.setStyle("-fx-text-fill: " + textColor + "; -fx-border-color: #000000; -fx-background-color: " + backgroundColor + ";");
+                        node.setStyle("-fx-text-fill: " + convertToValidHex(textColor) +
+                                "; -fx-border-color: #000000; -fx-background-color: " + convertToValidHex(backgroundColor) + ";");
+
+                        System.out.println("convertToValidHex(textColor) = " + convertToValidHex(textColor) + "convertToValidHex(backgroundColor)" + convertToValidHex(backgroundColor) + ";");
                     }
                 }
             }
@@ -383,12 +322,14 @@ public class SpreadsheetController implements Serializable {
 
         // Highlight dependencies in light blue
         List<String> dependencies = spreadsheetManagerDTO.getCellDTO(cellIdentifier).getDependencies();
+        System.out.println("Dependencies for cell " + cellIdentifier + ": " + dependencies);
         for (String dependentCellId : dependencies) {
             highlightCell(dependentCellId, "lightblue");
         }
 
         // Highlight dependents in light green
         List<String> dependents = spreadsheetManagerDTO.getCellDTO(cellIdentifier).getDependents();
+        System.out.println("Dependents for cell " + cellIdentifier + ": " + dependents);
         for (String dependentCellId : dependents) {
             highlightCell(dependentCellId, "lightgreen");
         }
@@ -398,24 +339,24 @@ public class SpreadsheetController implements Serializable {
             TextField selectedCellIdField = headController.getSelectedCellIdField();
             TextField originalCellValueField = headController.getOriginalCellValueField();
             Label lastUpdateCellVersionField = headController.getLastUpdateCellVersionField();
+            TextField selectedDynamicCellIdField = headController.getSelectedDynamicCellIdField();
             Label modifiedBy = headController.getModifiedBy();
+
             if (selectedCellIdField != null && originalCellValueField != null) {
                 selectedCellIdField.setText(cellIdentifier);
+                selectedDynamicCellIdField.setText(cellIdentifier);
                 String sourceValue = spreadsheetManagerDTO.getCellDTO(cellIdentifier).getSourceValue().toString();
                 int lastModifiedVersion = spreadsheetManagerDTO.getCellDTO(cellIdentifier).getLastModifiedVersion();
                 originalCellValueField.setText(sourceValue.equals("EMPTY") ? "" : sourceValue);
-                String tmp = spreadsheetManagerDTO.getCellDTO(cellIdentifier).getLastModifiedBy() == null ? "" :( "By user: " + spreadsheetManagerDTO.getCellDTO(cellIdentifier).getLastModifiedBy());
-                lastUpdateCellVersionField.setText("Last update cell version: " + (lastModifiedVersion));
+                String tmp = spreadsheetManagerDTO.getCellDTO(cellIdentifier).getLastModifiedBy() == null ? "" : ("By user: " + spreadsheetManagerDTO.getCellDTO(cellIdentifier).getLastModifiedBy());
+                lastUpdateCellVersionField.setText("Last update cell version: " + lastModifiedVersion);
                 modifiedBy.setText(tmp);
-
                 // Check the user's permission before showing the popup
                 if (!userPermission.equals("READER")) {
-                    // Call the function input popup for users with WRITER or OWNER permissions
                     originalCellValueField.setOnMouseClicked(event -> {
                         showFunctionInputPopup(cellIdentifier, originalCellValueField);
                     });
                 } else {
-                    // For READER permission, disable the popup functionality
                     originalCellValueField.setOnMouseClicked(event -> {
                         event.consume();  // Consume the event so nothing happens
                     });
@@ -423,6 +364,7 @@ public class SpreadsheetController implements Serializable {
             }
         }
     }
+
 
 
 
@@ -941,7 +883,7 @@ public class SpreadsheetController implements Serializable {
         }
     }
 */
-    private void refreshCellAndDependents(String cellIdentifier) throws UnsupportedEncodingException {
+    public void refreshCellAndDependents(String cellIdentifier) throws UnsupportedEncodingException {
         // Send request to server to fetch updated cell value and dependents
         OkHttpClient client = new OkHttpClient();
 
@@ -995,7 +937,63 @@ public class SpreadsheetController implements Serializable {
     }
 
 
-    private void updateCellInClientDTO(CellDTO updatedCell, List<CellDTO> dependentCells, String lastModifiedBy) {
+
+    public void refreshTempCellAndDependents(String cellIdentifier) throws UnsupportedEncodingException {
+        // Send request to server to fetch updated cell value and dependents from the temporary sheet
+        OkHttpClient client = new OkHttpClient();
+
+        // Include userName (current user viewing the temporary sheet) in the request
+        String userName = appController.getSpreadsheetController().spreadsheetManagerDTO.getCurrentUserName();
+
+        // Construct the URL with query parameters, including the userName
+        String url = String.format(
+                "http://localhost:8080/server_Web/getTempCellUpdate?cellId=%s&sheetName=%s&userName=%s",  // Use the new servlet path
+                URLEncoder.encode(cellIdentifier, "UTF-8"),
+                URLEncoder.encode(spreadsheetManagerDTO.getSpreadsheetDTO().getSheetName(), "UTF-8"),
+                URLEncoder.encode(userName, "UTF-8")
+        );
+
+        Request request = new Request.Builder()
+                .url(url)
+                .get()
+                .build();
+
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                Platform.runLater(() -> appController.showError("Error", "Failed to fetch temporary cell updates."));
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                String responseData = response.body().string();
+
+                // Log the raw response data from the server
+                System.out.println("Server response (temp): " + responseData);
+
+                Platform.runLater(() -> {
+                    Gson gson = new Gson();
+                    try {
+                        // Deserialize the server's response
+                        CellUpdateDTO cellUpdateDTO = gson.fromJson(responseData, CellUpdateDTO.class);
+                        System.out.println("Updated temporary cell from server: " + cellUpdateDTO.getUpdatedCell().getSourceValue());
+
+                        // Refresh the cell and dependents based on the updated data received from the server
+                        updateCellInGrid(cellUpdateDTO.getUpdatedCell());
+                        for (CellDTO dependentCell : cellUpdateDTO.getDependentCells()) {
+                            refreshTempCellAndDependents(dependentCell.getCellId());  // Continue refreshing dependents
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                });
+            }
+        });
+    }
+
+
+
+    public void updateCellInClientDTO(CellDTO updatedCell, List<CellDTO> dependentCells, String lastModifiedBy) {
         // Update the cell in the client-side DTO
         for (CellDTO cell : spreadsheetManagerDTO.getSpreadsheetDTO().getCells()) {
             if (cell.getCellId().equals(updatedCell.getCellId())) {
@@ -1306,20 +1304,39 @@ public class SpreadsheetController implements Serializable {
 
 
 
-    // Helper function to convert javafx.scene.paint.Color to java.awt.Color
-    private java.awt.Color toAwtColor(javafx.scene.paint.Color fxColor) {
-        int r = (int) (fxColor.getRed() * 255);
-        int g = (int) (fxColor.getGreen() * 255);
-        int b = (int) (fxColor.getBlue() * 255);
-        return new java.awt.Color(r, g, b);  // java.awt.Color does not have an opacity parameter, so we omit it
+    // Convert JavaFX Color to AWT Color
+    public static java.awt.Color toAwtColor(javafx.scene.paint.Color fxColor) {
+        return new java.awt.Color((float) fxColor.getRed(), (float) fxColor.getGreen(), (float) fxColor.getBlue(), (float) fxColor.getOpacity());
     }
+
+    // Convert AWT Color to JavaFX Color
+    public static javafx.scene.paint.Color toFxColor(java.awt.Color awtColor) {
+        return new javafx.scene.paint.Color(awtColor.getRed() / 255.0, awtColor.getGreen() / 255.0, awtColor.getBlue() / 255.0, awtColor.getAlpha() / 255.0);
+    }
+
+    // Converts javafx.scene.paint.Color to a valid hex code (without alpha channel)
+    private String toRgbCode(javafx.scene.paint.Color color) {
+        return String.format("#%02X%02X%02X",
+                (int)(color.getRed() * 255),
+                (int)(color.getGreen() * 255),
+                (int)(color.getBlue() * 255));
+    }
+
+
 
     // Apply the text color to a cell and update the data model
     public void applyCellTextColor(String cellId, javafx.scene.paint.Color textColor) {
         // Get the cell's node in the grid
         Node cellNode = getCellNodeById(cellId);
         if (cellNode instanceof Label) {
-            ((Label) cellNode).setStyle("-fx-text-fill: " + toRgbCode(textColor)); // Apply the text color
+            // Get the current background color
+            String currentBackground = spreadsheetManagerDTO.getCellBackgroundColor(cellId);
+            String backgroundColorHex = (currentBackground != null) ? currentBackground : "#FFFFFF"; // Default to white
+
+            // Update both background and text colors together to avoid conflict
+            ((Label) cellNode).setStyle(
+                    "-fx-background-color: " + backgroundColorHex + "; -fx-text-fill: " + toRgbCode(textColor) + ";"
+            );
         }
 
         // Update the internal data model (spreadsheet) with the new text color
@@ -1331,12 +1348,20 @@ public class SpreadsheetController implements Serializable {
         // Get the cell's node in the grid
         Node cellNode = getCellNodeById(cellId);
         if (cellNode instanceof Label) {
-            ((Label) cellNode).setStyle("-fx-background-color: " + toRgbCode(backgroundColor) + "; -fx-text-fill: " + this.spreadsheetManagerDTO.getCellTextColor(cellId) + ";"); // Apply the background and text colors
+            // Get the current text color
+            String currentTextColor = spreadsheetManagerDTO.getCellTextColor(cellId);
+            String textColorHex = (currentTextColor != null) ? currentTextColor : "#000000"; // Default to black
+
+            // Update both background and text colors together to avoid conflict
+            ((Label) cellNode).setStyle(
+                    "-fx-background-color: " + toRgbCode(backgroundColor) + "; -fx-text-fill: " + (textColorHex) + ";"
+            );
         }
 
         // Update the internal data model (spreadsheet) with the new background color
         spreadsheetManagerDTO.setCellBackgroundColor(cellId, toAwtColor(backgroundColor)); // Convert to java.awt.Color and store
     }
+
 
     // Reset the formatting of a cell
     public void resetCellFormatting(String cellId) {
@@ -1364,12 +1389,6 @@ public class SpreadsheetController implements Serializable {
         return null; // Return null if no matching cell is found
     }
 
-    private String toRgbCode(Color color) {
-        return String.format("rgb(%d, %d, %d)",
-                (int) (color.getRed() * 255),
-                (int) (color.getGreen() * 255),
-                (int) (color.getBlue() * 255));
-    }
 
     // Helper method to get all rows in the spreadsheet
     public List<Map<String, String>> getAllRowsInSpreadsheet() {

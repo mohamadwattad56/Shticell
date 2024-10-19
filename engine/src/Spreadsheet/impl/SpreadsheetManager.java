@@ -12,7 +12,7 @@ import javafx.scene.paint.Color;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class SpreadsheetManager implements Engine {
+public class SpreadsheetManager implements Engine,Cloneable  {
     private final Spreadsheet currentSpreadsheet;
     private final List<Version> versionHistory = new ArrayList<>();
     private boolean isSheetLoaded = false;
@@ -23,7 +23,62 @@ public class SpreadsheetManager implements Engine {
 
 
 
+    // Constructor for cloning
+    private SpreadsheetManager(Spreadsheet clonedSpreadsheet, List<Version> clonedVersionHistory,
+                               boolean isSheetLoaded, int currentVersion, Map<String, Permission> clonedUserPermissions,
+                               List<PermissionRequestDTO> clonedProcessedRequests, List<PermissionRequestDTO> clonedPendingRequests) {
+        this.currentSpreadsheet = clonedSpreadsheet;  // Assign the cloned Spreadsheet
+        this.versionHistory.addAll(clonedVersionHistory);
+        this.isSheetLoaded = isSheetLoaded;
+        this.currentVersion = currentVersion;
+        this.userPermissions.putAll(clonedUserPermissions);
+        this.processedRequests.addAll(clonedProcessedRequests);
+        this.pendingRequests.addAll(clonedPendingRequests);
+    }
 
+    // Clone method
+    @Override
+    public SpreadsheetManager clone() {
+        // Create deep copies of the necessary fields
+        Spreadsheet clonedSpreadsheet = this.currentSpreadsheet.clone();
+        List<Version> clonedVersionHistory = new ArrayList<>();
+        for (Version version : this.versionHistory) {
+            clonedVersionHistory.add(version.clone());
+        }
+
+        Map<String, Permission> clonedUserPermissions = new HashMap<>(this.userPermissions);
+
+        List<PermissionRequestDTO> clonedProcessedRequests = new ArrayList<>();
+        for (PermissionRequestDTO request : this.processedRequests) {
+            clonedProcessedRequests.add(request.clone());
+        }
+
+        List<PermissionRequestDTO> clonedPendingRequests = new ArrayList<>();
+        for (PermissionRequestDTO request : this.pendingRequests) {
+            clonedPendingRequests.add(request.clone());
+        }
+
+        // Return a new instance using the private constructor
+        return new SpreadsheetManager(
+                clonedSpreadsheet,
+                clonedVersionHistory,
+                this.isSheetLoaded,
+                this.currentVersion,
+                clonedUserPermissions,
+                clonedProcessedRequests,
+                clonedPendingRequests
+        );
+
+    }
+
+    public void recalculate() {
+        currentSpreadsheet.recalculate();
+    }
+
+    public void dynamicEval()
+    {
+        currentSpreadsheet.dynamicEval();
+    }
 
     public enum Permission {
         OWNER, READER, WRITER, NONE

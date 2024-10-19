@@ -1,8 +1,11 @@
 package utils;
 
+import chat.chat.ChatManager;
 import jakarta.servlet.ServletContext;
+import chat.users.UserManager;
 import jakarta.servlet.http.HttpServletRequest;
-import users.UserManager;
+
+import static constant.Constant.INT_PARAMETER_ERROR;
 
 public class ServletUtils {
 
@@ -16,6 +19,11 @@ public class ServletUtils {
     private static final Object sheetCellManagerLock = new Object();
     private static final Object engineManagerLock = new Object();
     private static final Object fileManagerLock = new Object();  // Lock for FileManager
+    private static final Object chatManagerLock = new Object();
+    private static final String CHAT_MANAGER_ATTRIBUTE_NAME = "chatManager";
+
+
+
 
     // Fetch the UserManager and initialize it if it doesn't exist
     public static UserManager getUserManager(ServletContext servletContext) {
@@ -36,6 +44,30 @@ public class ServletUtils {
         }
         return (FileManager) servletContext.getAttribute(FILE_MANAGER_ATTRIBUTE_NAME);
     }
+
+    public static ChatManager getChatManager(ServletContext servletContext) {
+        synchronized (chatManagerLock) {
+            if (servletContext.getAttribute(CHAT_MANAGER_ATTRIBUTE_NAME) == null) {
+                servletContext.setAttribute(CHAT_MANAGER_ATTRIBUTE_NAME, new ChatManager());
+            }
+        }
+        return (ChatManager) servletContext.getAttribute(CHAT_MANAGER_ATTRIBUTE_NAME);
+    }
+
+    public static int getIntParameter(HttpServletRequest request, String name) {
+        String value = request.getParameter(name);
+        if (value != null) {
+            try {
+                return Integer.parseInt(value);
+            } catch (NumberFormatException numberFormatException) {
+            }
+        }
+        return INT_PARAMETER_ERROR;
+    }
+
+
+
+
 
 
     // Uncommented parts for future use if needed
@@ -72,4 +104,9 @@ public class ServletUtils {
     //        }
     //        return INT_PARAMETER_ERROR;  // Error constant for invalid integers
     //    }
+
+
+
+
+
 }

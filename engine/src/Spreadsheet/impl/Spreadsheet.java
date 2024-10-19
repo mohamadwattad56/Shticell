@@ -19,7 +19,7 @@ import java.io.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class Spreadsheet implements Serializable {
+public class Spreadsheet implements Serializable,Cloneable {
     private static final String CIRCULAR_DEPENDENCY_ERROR = "Circular dependency or missing reference detected.";
     private static final String OUT_OF_BOUNDS_ERROR = "Cell %s is out of bounds.";;
 
@@ -65,7 +65,27 @@ public class Spreadsheet implements Serializable {
         return ranges;
     }
 
+    @Override
+    public Spreadsheet clone() {
+        try {
+            Spreadsheet clonedSpreadsheet = (Spreadsheet) super.clone();
 
+            // Deep clone cells
+            clonedSpreadsheet.cells = new HashMap<>();
+            for (Map.Entry<String, CellImpl> entry : this.cells.entrySet()) {
+                clonedSpreadsheet.cells.put(entry.getKey(), entry.getValue().clone());
+            }
+
+            // Deep clone other fields
+            clonedSpreadsheet.cellLastModifiedVersion = new HashMap<>(this.cellLastModifiedVersion);
+            clonedSpreadsheet.ranges = new HashMap<>(this.ranges);
+
+            return clonedSpreadsheet;
+
+        } catch (CloneNotSupportedException e) {
+            throw new AssertionError("Clone not supported", e);
+        }
+    }
 
     public void loadFromXml(String filePath) {
         try {
@@ -256,7 +276,7 @@ public class Spreadsheet implements Serializable {
     private int processCellChange(String cellId, CellImpl tempCell, Object value, int currentVersion) {
         int affectedCellsCount = 0;
         try {
-            System.out.println("Processing cell change for: " + cellId + " with value: " + value);
+           // System.out.println("Processing cell change for: " + cellId + " with value: " + value);
 
             cells.put(cellId, tempCell);
             detectCircularDependency(cellId, new HashSet<>());
@@ -275,7 +295,7 @@ public class Spreadsheet implements Serializable {
                 affectedCellsCount += updateDependentCells(cellId, currentVersion);
             }
 
-            System.out.println("Successfully processed cell change for " + cellId);
+            //System.out.println("Successfully processed cell change for " + cellId);
 
         } catch (Exception e) {
             System.out.println("Error processing cell change for " + cellId + ": " + e.getMessage());
@@ -341,13 +361,6 @@ public class Spreadsheet implements Serializable {
         }
     }
 
-
-    private void handleCircularDependency(String cellId, int currentVersion) {
-        if (currentVersion == -1) {
-            cells.remove(cellId);
-        }
-        throw new CircularDependencyException(CIRCULAR_DEPENDENCY_ERROR);
-    }
 
     private void revertCellChange(String cellId, int currentVersion) {
         if (currentVersion == -1) {
@@ -832,4 +845,7 @@ public class Spreadsheet implements Serializable {
     }
 
 
+    public void dynamicEval() {
+        recalculate();;
+    }
 }

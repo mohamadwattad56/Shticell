@@ -1,6 +1,6 @@
 package dto;
 
-public class PermissionRequestDTO {
+public class PermissionRequestDTO implements Cloneable {
     private String username;
     private String permissionType;
     private RequestStatus requestStatus;
@@ -10,7 +10,14 @@ public class PermissionRequestDTO {
         PENDING, APPROVED,DENIED
     }
 
-
+    @Override
+    public PermissionRequestDTO clone() {
+        try {
+            return (PermissionRequestDTO) super.clone();
+        } catch (CloneNotSupportedException e) {
+            throw new AssertionError("Clone not supported", e);
+        }
+    }
     public PermissionRequestDTO(String username, String permissionType, RequestStatus isApproved, String sheetName) {
         this.username = username;
         this.permissionType = permissionType;

@@ -10,36 +10,52 @@
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
+<?import javafx.scene.layout.Region?>
 <VBox fx:id="header" alignment="TOP_CENTER" prefHeight="149.0" prefWidth="771.0" spacing="10.0" stylesheets="@../../resources/styles.css" xmlns="http://javafx.com/javafx/23" xmlns:fx="http://javafx.com/fxml/1" fx:controller="gridPageController.headController.HeadController">
    <children>
-      <Label styleClass="main-title" text="Shticell" />
+      <!-- HBox to contain both Back button on the far left and Title centered -->
+      <HBox prefWidth="790.0" alignment="CENTER" spacing="10.0">
+         <children>
+            <!-- Back button on the far left -->
+            <Button fx:id="backButton" text="Back" alignment="CENTER_LEFT" />
+
+            <!-- Empty region to push the title to the center -->
+            <Region HBox.hgrow="ALWAYS" />
+
+            <!-- Title centered -->
+            <Label styleClass="main-title" text="Shticell" />
+
+            <!-- Empty region to balance the layout -->
+            <Region HBox.hgrow="ALWAYS" />
+         </children>
+      </HBox>
+
       <HBox prefWidth="790.0" spacing="10.0" HBox.hgrow="ALWAYS">
          <children>
-           <!--> <Button fx:id="loadFileButton" text="Load File Button" styleClass="custom-button"  style="-fx-padding: 3px 8px;"/>
-            <TextField fx:id="filePathField" HBox.hgrow="ALWAYS" />
-            <ProgressBar fx:id="progressBar" prefWidth="200" progress="0.0" visible="false" /><!-->
-            <HBox spacing="10">
-            <ComboBox fx:id="skinSelector" prefHeight="42.0" prefWidth="182.0" promptText="Select Skin">
-               <items>
-                  <FXCollections fx:factory="observableArrayList">
-                     <String fx:value="Light" />
-                     <String fx:value="Dark" />
-                     <String fx:value="Colorful" />
-                  </FXCollections>
-               </items>
-            </ComboBox>
+            <HBox prefHeight="42.0" prefWidth="963.0" spacing="10">
+               <ComboBox fx:id="skinSelector" prefHeight="42.0" prefWidth="188.0" promptText="Select Skin">
+                  <items>
+                     <FXCollections fx:factory="observableArrayList">
+                        <String fx:value="Light" />
+                        <String fx:value="Dark" />
+                        <String fx:value="Colorful" />
+                     </FXCollections>
+                  </items>
+               </ComboBox>
 
                <TextField fx:id="selectedDynamicCellIdField" promptText="Selected Cell ID" />
                <TextField fx:id="minValueField" promptText="Min Value" />
                <TextField fx:id="maxValueField" promptText="Max Value" />
                <TextField fx:id="stepSizeField" promptText="Step Size" />
                <Slider fx:id="dynamicAnalysisSlider" blockIncrement="1" max="100" min="0" prefHeight="38.0" prefWidth="198.0" showTickLabels="true" showTickMarks="true" />
-               <Button fx:id="startDynamicAnalysisButton" prefHeight="42.0" prefWidth="241.0" text="Dynamic Analysis" />
+               <Button fx:id="applyButton" onAction="#handleApplyChanges" prefHeight="42.0" prefWidth="168.0" text="Apply" />
+               <Button fx:id="cancelButton" onAction="#handleCancelChanges" prefHeight="42.0" prefWidth="165.0" text="Cancel" />
             </HBox>
 
             <Button fx:id="versionButton" mnemonicParsing="false" prefHeight="10.0" prefWidth="184.0" text="New Version Available" visible="false" />
          </children>
       </HBox>
+
       <HBox spacing="10.0" HBox.hgrow="ALWAYS">
          <children>
             <TextField fx:id="selectedCellIdField" prefHeight="26.0" prefWidth="59.0" text="Selected Cell ID" />

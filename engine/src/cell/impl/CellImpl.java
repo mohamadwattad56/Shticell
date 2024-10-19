@@ -2,7 +2,7 @@ package cell.impl;
 
 import cell.api.Cell;
 
-abstract public class CellImpl implements Cell {
+abstract public class CellImpl implements Cell, Cloneable {
 
     protected Object sourceValue;
     protected Object effectiveValue;
@@ -29,6 +29,15 @@ abstract public class CellImpl implements Cell {
     public Object evaluate() {
         updateEffectiveValue();
         return effectiveValue;
+    }
+
+    @Override
+    public CellImpl clone() {
+        try {
+            return (CellImpl) super.clone();
+        } catch (CloneNotSupportedException e) {
+            throw new AssertionError("Clone not supported", e);
+        }
     }
 
     @Override

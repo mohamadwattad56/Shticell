@@ -1,6 +1,7 @@
 package login;
 
 import com.sun.istack.NotNull;
+import dashboard.chat.main.ChatAppMainController;
 import dashboard.mainDashboardController.MainDashboardController;
 import gridPageController.mainController.appController;
 import httputils.HttpClientUtil;
@@ -42,6 +43,7 @@ public class LoginController {
     private appController mainController;  // Reference to the main controller
     private final StringProperty errorMessageProperty = new SimpleStringProperty();  // Property for error messages
     private Stage primaryStage;  // To handle stage switching
+    private ChatAppMainController chatAppMainController;
 
     @FXML
     public void initialize() {
@@ -157,5 +159,10 @@ public class LoginController {
     // Set primary stage to handle switching between windows
     public void setPrimaryStage(Stage primaryStage) {
         this.primaryStage = primaryStage;
+    }
+
+
+    public void setChatAppMainController(ChatAppMainController chatAppMainController) {
+        this.chatAppMainController = chatAppMainController;
     }
 }

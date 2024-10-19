@@ -8,6 +8,7 @@ import function.impl.*;
 
 import java.awt.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 
@@ -190,4 +191,56 @@ public class SpreadsheetManagerDTO {
             }
         }
     }
+
+    // Apply temporary values as permanent
+    public void applyTemporaryValues() {
+        for (CellDTO cell : this.spreadsheetDTO.getCells()) {
+            if (cell.getTemporaryValue() != null) {
+                cell.setSourceValue(cell.getTemporaryValue());  // Save the temporary value as the permanent value
+                cell.clearTemporaryValue();  // Clear the temporary value
+            }
+        }
+    }
+
+    // Revert all temporary values
+    public void clearTemporaryValues() {
+        for (CellDTO cell : this.spreadsheetDTO.getCells()) {
+            cell.clearTemporaryValue();
+        }
+    }
+
+    @Override
+    public SpreadsheetManagerDTO clone() {
+        // Clone the spreadsheetDTO (assuming SpreadsheetDTO also has a proper clone or copy constructor)
+        SpreadsheetDTO clonedSpreadsheetDTO = new SpreadsheetDTO(
+                this.spreadsheetDTO.getSheetName(),
+                new ArrayList<>(this.spreadsheetDTO.getCells()),  // Deep copy of the list of cells
+                this.spreadsheetDTO.getRows(),
+                this.spreadsheetDTO.getColumns(),
+                this.spreadsheetDTO.getColumnWidth(),
+                this.spreadsheetDTO.getRowHeight(),
+                new HashMap<>(this.spreadsheetDTO.getRanges())     // Deep copy of ranges map
+        );
+
+        // Clone the version history (deep copy of each VersionDTO if needed)
+        List<VersionDTO> clonedVersionHistory = new ArrayList<>();
+        for (VersionDTO version : this.versionHistory) {
+            clonedVersionHistory.add(new VersionDTO(
+                    version.getVersionNumber(),
+                    version.getSpreadsheetDTO(),  // Ensure that the spreadsheetDTO in VersionDTO is deeply copied if necessary
+                    version.getChangedCellsCount()
+            ));
+        }
+
+        // Create and return the deep copy of SpreadsheetManagerDTO
+        return new SpreadsheetManagerDTO(
+                clonedSpreadsheetDTO,
+                clonedVersionHistory,
+                this.isSheetLoaded,
+                this.currentVersion,
+                this.uploaderName
+        );
+    }
+
+
 }
