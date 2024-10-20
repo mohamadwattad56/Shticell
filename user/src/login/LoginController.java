@@ -3,6 +3,7 @@ package login;
 import com.sun.istack.NotNull;
 import dashboard.chat.main.ChatAppMainController;
 import dashboard.mainDashboardController.MainDashboardController;
+import gridPageController.mainController.appController;
 import httputils.HttpClientUtil;
 import jakarta.servlet.http.HttpServletResponse;
 import javafx.application.Platform;
@@ -16,14 +17,12 @@ import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
+import javafx.scene.input.KeyEvent;
 import javafx.stage.Stage;
 import okhttp3.*;
 import java.io.IOException;
-import java.util.Objects;
 
-import static constant.Constant.USERNAME;
 import static httputils.Constants.LOGIN_PAGE;
-import static httputils.Constants.REMOVE_USER;
 
 public class LoginController {
 
@@ -33,18 +32,16 @@ public class LoginController {
     @FXML
     private Label errorMessageLabel;
 
+
     @FXML
     private Button loginButton;
 
+
+
+    private appController mainController;  // Reference to the main controller
     private final StringProperty errorMessageProperty = new SimpleStringProperty();  // Property for error messages
-
     private Stage primaryStage;  // To handle stage switching
-
     private ChatAppMainController chatAppMainController;
-
-    public LoginController(ChatAppMainController chatAppMainController) {
-        this.chatAppMainController = chatAppMainController;
-    }
 
     @FXML
     public void initialize() {
@@ -64,6 +61,8 @@ public class LoginController {
         loginButton.setOnAction(this::loginButtonClicked);
     }
 
+
+    // Triggered when the login button is clicked
     @FXML
     private void loginButtonClicked(ActionEvent event) {
         String userName = userNameTextField.getText();
@@ -74,16 +73,16 @@ public class LoginController {
         }
 
         // Build the login URL with the username as a query parameter
-        String finalUrl = Objects.requireNonNull(HttpUrl.parse(LOGIN_PAGE))
+        String finalUrl = HttpUrl.parse(LOGIN_PAGE)
                 .newBuilder()
-                .addQueryParameter(USERNAME, userName)
+                .addQueryParameter("username", userName)
                 .build()
                 .toString();
 
         // Send asynchronous login request to the server
         HttpClientUtil.runAsync(finalUrl, new Callback() {
             @Override
-            public void onFailure(@org.jetbrains.annotations.NotNull @NotNull Call call, @NotNull IOException e) {
+            public void onFailure(@NotNull Call call, @NotNull IOException e) {
                 Platform.runLater(() -> errorMessageProperty.set("Connection failed: " + e.getMessage()));
             }
 
@@ -91,7 +90,6 @@ public class LoginController {
             public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
                 if (response.code() != 200) {
                     // Handle error response
-                    assert response.body() != null;
                     String responseBody = response.body().string();
                     Platform.runLater(() -> errorMessageProperty.set("Login failed: " + responseBody));
                 } else {
@@ -102,6 +100,8 @@ public class LoginController {
         });
     }
 
+
+    // Switch to the dashboard after successful login
     private void switchToDashboard(String username) {
         try {
             // Load the main dashboard FXML file
@@ -124,7 +124,8 @@ public class LoginController {
             dashboardStage.setOnCloseRequest(event -> {
 
                 // Send an HTTP request to remove the user from the set
-                HttpClientUtil.runAsync(REMOVE_USER, new okhttp3.Callback() {
+                String finalUrl = "http://localhost:8080/server_Web/removeuser";  // Update with the actual URL
+                HttpClientUtil.runAsync(finalUrl, new okhttp3.Callback() {
                     @Override
                     public void onFailure(@NotNull okhttp3.Call call, @NotNull IOException e) {
                         System.out.println("Failed to remove user: " + e.getMessage());
@@ -154,7 +155,25 @@ public class LoginController {
         }
     }
 
+
+
+
+
+    // Clears the error message when the user types in the username field
+    @FXML
+    private void userNameKeyTyped(KeyEvent event) {
+        errorMessageProperty.set("");
+    }
+
+
+
+    // Set primary stage to handle switching between windows
     public void setPrimaryStage(Stage primaryStage) {
         this.primaryStage = primaryStage;
+    }
+
+
+    public void setChatAppMainController(ChatAppMainController chatAppMainController) {
+        this.chatAppMainController = chatAppMainController;
     }
 }

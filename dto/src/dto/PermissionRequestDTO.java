@@ -2,7 +2,7 @@ package dto;
 
 public class PermissionRequestDTO implements Cloneable {
     private String username;
-    private final String permissionType;
+    private String permissionType;
     private RequestStatus requestStatus;
     private final String sheetName;
 
