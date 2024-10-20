@@ -1,11 +1,5 @@
 package dto;
-
-
-import cell.api.Cell;
 import cell.impl.*;
-import function.api.Functions;
-import function.impl.*;
-
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -44,13 +38,7 @@ public class SpreadsheetManagerDTO {
         return spreadsheetDTO;
     }
 
-    public List<VersionDTO> getVersionHistory() {
-        return versionHistory;
-    }
 
-    public boolean isSheetLoaded() {
-        return isSheetLoaded;
-    }
 
     public int getCurrentVersion() {
         return currentVersion;
@@ -59,13 +47,6 @@ public class SpreadsheetManagerDTO {
         return uploaderName;
     }
 
-    public VersionDTO getVersionDTO(int version) {
-        for (VersionDTO versionDTO : versionHistory) {
-            if(versionDTO.getVersionNumber() == version)
-                return versionDTO;
-        }
-        return null;
-    }
 
 
     public String getCellTextColor(String cellId) {
@@ -178,9 +159,9 @@ public class SpreadsheetManagerDTO {
     // Helper method to convert Color object to RGB String
     private String toRgbCode(Color color) {
         return String.format("#%02X%02X%02X",
-                (int) (color.getRed() * 255),
-                (int) (color.getGreen() * 255),
-                (int) (color.getBlue() * 255));
+                 (color.getRed() * 255),
+                 (color.getGreen() * 255),
+                 (color.getBlue() * 255));
     }
 
 
@@ -192,22 +173,7 @@ public class SpreadsheetManagerDTO {
         }
     }
 
-    // Apply temporary values as permanent
-    public void applyTemporaryValues() {
-        for (CellDTO cell : this.spreadsheetDTO.getCells()) {
-            if (cell.getTemporaryValue() != null) {
-                cell.setSourceValue(cell.getTemporaryValue());  // Save the temporary value as the permanent value
-                cell.clearTemporaryValue();  // Clear the temporary value
-            }
-        }
-    }
 
-    // Revert all temporary values
-    public void clearTemporaryValues() {
-        for (CellDTO cell : this.spreadsheetDTO.getCells()) {
-            cell.clearTemporaryValue();
-        }
-    }
 
     @Override
     public SpreadsheetManagerDTO clone() {

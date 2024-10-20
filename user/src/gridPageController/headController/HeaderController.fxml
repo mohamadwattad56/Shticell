@@ -5,19 +5,18 @@
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
-<?import javafx.scene.control.Slider?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
 
-<?import javafx.scene.layout.Region?>
 <VBox fx:id="header" alignment="TOP_CENTER" prefHeight="149.0" prefWidth="771.0" spacing="10.0" stylesheets="@../../resources/styles.css" xmlns="http://javafx.com/javafx/23" xmlns:fx="http://javafx.com/fxml/1" fx:controller="gridPageController.headController.HeadController">
    <children>
       <!-- HBox to contain both Back button on the far left and Title centered -->
-      <HBox prefWidth="790.0" alignment="CENTER" spacing="10.0">
+      <HBox alignment="CENTER" prefWidth="790.0" spacing="10.0">
          <children>
             <!-- Back button on the far left -->
-            <Button fx:id="backButton" text="Back" alignment="CENTER_LEFT" />
+            <Button fx:id="backButton" alignment="CENTER_LEFT" text="Back" />
 
             <!-- Empty region to push the title to the center -->
             <Region HBox.hgrow="ALWAYS" />
@@ -32,7 +31,7 @@
 
       <HBox prefWidth="790.0" spacing="10.0" HBox.hgrow="ALWAYS">
          <children>
-            <HBox prefHeight="42.0" prefWidth="963.0" spacing="10">
+            <HBox prefHeight="42.0" prefWidth="190.0" spacing="10">
                <ComboBox fx:id="skinSelector" prefHeight="42.0" prefWidth="188.0" promptText="Select Skin">
                   <items>
                      <FXCollections fx:factory="observableArrayList">
@@ -42,14 +41,6 @@
                      </FXCollections>
                   </items>
                </ComboBox>
-
-               <TextField fx:id="selectedDynamicCellIdField" promptText="Selected Cell ID" />
-               <TextField fx:id="minValueField" promptText="Min Value" />
-               <TextField fx:id="maxValueField" promptText="Max Value" />
-               <TextField fx:id="stepSizeField" promptText="Step Size" />
-               <Slider fx:id="dynamicAnalysisSlider" blockIncrement="1" max="100" min="0" prefHeight="38.0" prefWidth="198.0" showTickLabels="true" showTickMarks="true" />
-               <Button fx:id="applyButton" onAction="#handleApplyChanges" prefHeight="42.0" prefWidth="168.0" text="Apply" />
-               <Button fx:id="cancelButton" onAction="#handleCancelChanges" prefHeight="42.0" prefWidth="165.0" text="Cancel" />
             </HBox>
 
             <Button fx:id="versionButton" mnemonicParsing="false" prefHeight="10.0" prefWidth="184.0" text="New Version Available" visible="false" />

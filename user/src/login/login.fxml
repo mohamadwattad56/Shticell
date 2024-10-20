@@ -9,51 +9,50 @@
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.RowConstraints?>
 
-<GridPane hgap="5.0" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="192.0" prefWidth="303.0" stylesheets="@login.css" vgap="5.0" xmlns="http://javafx.com/javafx/22" xmlns:fx="http://javafx.com/fxml/1" fx:controller="login.LoginController">
+<GridPane hgap="5.0" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity"
+          prefHeight="192.0" prefWidth="303.0" stylesheets="@login.css" vgap="5.0" xmlns="http://javafx.com/javafx/22"
+          xmlns:fx="http://javafx.com/fxml/1" fx:controller="login.LoginController">
     <columnConstraints>
-        <ColumnConstraints halignment="RIGHT" hgrow="NEVER" />
-        <ColumnConstraints hgrow="ALWAYS" />
+        <ColumnConstraints halignment="RIGHT" hgrow="NEVER"/>
+        <ColumnConstraints hgrow="ALWAYS"/>
     </columnConstraints>
     <rowConstraints>
-        <RowConstraints vgrow="NEVER" />
-        <RowConstraints maxHeight="40.0" minHeight="40.0" prefHeight="40.0" vgrow="NEVER" />
-        <RowConstraints maxHeight="1.7976931348623157E308" minHeight="20.0" prefHeight="20.0" vgrow="ALWAYS" />
-        <RowConstraints maxHeight="70.0" minHeight="70.0" prefHeight="70.0" vgrow="NEVER" />
+        <RowConstraints vgrow="NEVER"/>
+        <RowConstraints maxHeight="40.0" minHeight="40.0" prefHeight="40.0" vgrow="NEVER"/>
+        <RowConstraints maxHeight="1.7976931348623157E308" minHeight="20.0" prefHeight="20.0" vgrow="ALWAYS"/>
+        <RowConstraints maxHeight="70.0" minHeight="70.0" prefHeight="70.0" vgrow="NEVER"/>
     </rowConstraints>
-    <children>
-        <!-- User Name Label -->
-        <Label maxWidth="1.7976931348623157E308" minWidth="-Infinity" text="User Name:">
-            <GridPane.margin>
-                <Insets right="5.0" />
-            </GridPane.margin>
-        </Label>
-
-        <!-- TextField with example text and prompt -->
-        <TextField fx:id="userNameTextField" promptText="Enter your username" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS">
-            <GridPane.margin>
-                <Insets left="5.0" />
-            </GridPane.margin>
-        </TextField>
-
-        <!-- Buttons HBox -->
-        <HBox alignment="CENTER" prefHeight="103.0" prefWidth="488.0" spacing="20.0" GridPane.columnSpan="2" GridPane.rowIndex="3">
-            <children>
-                <!-- Login Button (Initially Disabled) -->
-                <Button fx:id="loginButton" mnemonicParsing="false" styleClass="main-action-button" text="Login" disable="true" />
-
-                <!-- Quit Button -->
-                <Button fx:id="quitButton" mnemonicParsing="false" styleClass="main-action-button" text="Quit" />
-            </children>
-        </HBox>
-
-        <!-- Error Message Label -->
-        <Label fx:id="errorMessageLabel" maxWidth="1.7976931348623157E308" styleClass="error-label" wrapText="true" GridPane.columnIndex="1" GridPane.rowIndex="1" GridPane.hgrow="ALWAYS">
-            <GridPane.margin>
-                <Insets left="5.0" />
-            </GridPane.margin>
-        </Label>
-    </children>
     <padding>
-        <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+        <Insets bottom="10.0" left="10.0" right="10.0" top="10.0"/>
     </padding>
+    <!-- User Name Label -->
+    <Label maxWidth="1.7976931348623157E308" minWidth="-Infinity" text="User Name:">
+        <GridPane.margin>
+            <Insets right="5.0"/>
+        </GridPane.margin>
+    </Label>
+
+    <!-- TextField with example text and prompt -->
+    <TextField fx:id="userNameTextField" promptText="Enter your username" GridPane.columnIndex="1"
+               GridPane.hgrow="ALWAYS">
+        <GridPane.margin>
+            <Insets left="5.0"/>
+        </GridPane.margin>
+    </TextField>
+
+    <!-- Buttons HBox -->
+    <HBox alignment="CENTER" prefHeight="103.0" prefWidth="488.0" spacing="20.0" GridPane.columnSpan="2"
+          GridPane.rowIndex="3">
+        <!-- Login Button (Initially Disabled) -->
+        <Button fx:id="loginButton" mnemonicParsing="false" styleClass="main-action-button" text="Login"
+                disable="true"/>
+    </HBox>
+
+    <!-- Error Message Label -->
+    <Label fx:id="errorMessageLabel" maxWidth="1.7976931348623157E308" styleClass="error-label" wrapText="true"
+           GridPane.columnIndex="1" GridPane.rowIndex="1" GridPane.hgrow="ALWAYS">
+        <GridPane.margin>
+            <Insets left="5.0"/>
+        </GridPane.margin>
+    </Label>
 </GridPane>

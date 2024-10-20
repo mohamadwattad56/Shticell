@@ -88,9 +88,12 @@ public class DashboardCommandsController {
             Stage chatStage = new Stage();
             chatStage.setTitle("Chat Room");
 
-            // Set the chatRoot in a new scene for the popup window
-            Scene chatScene = new Scene(chatRoot);
+            // Set the chatRoot in a new scene for the popup window with specific size
+            Scene chatScene = new Scene(chatRoot, 1000, 600);
             chatStage.setScene(chatScene);
+
+            // Make the stage non-resizable
+            chatStage.setResizable(false);
 
             // Initialize chat
             chatAppMainController.setMainDashboardController(mainDashboardController);
@@ -104,6 +107,7 @@ public class DashboardCommandsController {
             e.printStackTrace();
         }
     }
+
 
 
 
@@ -163,7 +167,6 @@ public class DashboardCommandsController {
             public void onResponse(Call call, Response response) throws IOException {
                 Platform.runLater(() -> {
                     if (response.isSuccessful()) {
-                        System.out.println("Permission request submitted successfully!");
                         mainDashboardController.fetchSheetPermissions(sheetName, uploaderName);  // Refresh the permissions table
 
                     } else {
@@ -200,14 +203,12 @@ public class DashboardCommandsController {
 
 
     private void handleRequestPermission() {
-        System.out.println("Request permission clicked.");
 
         // Get the selected sheet from DashboardTablesController
         DashboardTablesController.SheetRowData selectedSheet = mainDashboardController.getDashboardTablesController().getSelectedSheet();
 
         if (selectedSheet != null) {
             String sheetName = selectedSheet.getSheetName();
-            System.out.println("Selected sheet: " + sheetName);
 
             // Ask the user to choose the type of permission they want (READER or WRITER)
             ChoiceDialog<String> dialog = new ChoiceDialog<>("READER", "READER", "WRITER");
@@ -218,7 +219,6 @@ public class DashboardCommandsController {
             // Show the dialog and wait for the user response
             Optional<String> result = dialog.showAndWait();
             result.ifPresent(permissionType -> {
-                System.out.println("User chose permission type: " + permissionType);
 
                 // Call the method to request the permission
                 requestPermission(sheetName, permissionType,selectedSheet.getUploader());
@@ -229,7 +229,6 @@ public class DashboardCommandsController {
     }
 
     private void handleAckOrDenyPermission() {
-        System.out.println("Acknowledge/deny permission request clicked.");
 
         // Get the selected sheet from DashboardTablesController
         DashboardTablesController.SheetRowData selectedSheet = mainDashboardController.getDashboardTablesController().getSelectedSheet();
@@ -237,7 +236,6 @@ public class DashboardCommandsController {
             if(selectedSheet.getUploader().equalsIgnoreCase(this.mainDashboardController.getDashboardHeaderController().getDashUserName()))
             {
                 String sheetName = selectedSheet.getSheetName();
-                System.out.println("Selected sheet: " + sheetName);
 
                 // Fetch the pending permission requests from the server
                 fetchPendingRequests(sheetName);
@@ -388,18 +386,16 @@ public class DashboardCommandsController {
             public void onResponse(Call call, Response response) throws IOException {
                 Platform.runLater(() -> {
                     if (response.isSuccessful()) {
-                        System.out.println("Permission request " + decision + "d successfully!");
-
-                        // Update the UI by changing the row's status to approved
+                        // Remove the approved/denied item from the table
                         requestTable.getItems().stream()
                                 .filter(row -> row.getUserName().equals(request.getUsername()))
-                                .findFirst()
-                                .ifPresent(row -> row.setStatus(decision));
+                                .findFirst().ifPresent(rowToRemove -> requestTable.getItems().remove(rowToRemove));
 
                         // Optionally show a message to the owner
                         showSuccessHint("Request " + decision + "d for user: " + request.getUsername());
-                        mainDashboardController.fetchSheetPermissions(request.getSheetName(), mainDashboardController.getDashboardHeaderController().getDashUserName());  // Refresh the permissions table
 
+                        // You may also want to refresh the main permission table
+                        mainDashboardController.fetchSheetPermissions(request.getSheetName(), mainDashboardController.getDashboardHeaderController().getDashUserName());
                     } else {
                         System.out.println("Failed to " + decision + " permission: " + response.message());
                     }
@@ -407,6 +403,7 @@ public class DashboardCommandsController {
             }
         });
     }
+
 
 
     private void showSuccessHint(String message) {

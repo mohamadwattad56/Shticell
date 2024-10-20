@@ -32,8 +32,6 @@ public class LoginController {
     @FXML
     private Label errorMessageLabel;
 
-    @FXML
-    private Button quitButton;
 
     @FXML
     private Button loginButton;
@@ -53,8 +51,6 @@ public class LoginController {
         // Disable login button initially
         loginButton.setDisable(true);
 
-        // Handle the quit button action
-        quitButton.setOnAction(this::quitButtonClicked);
 
         // Add a listener to the TextField to enable the button when input is detected
         userNameTextField.textProperty().addListener((observable, oldValue, newValue) -> {
@@ -126,7 +122,6 @@ public class LoginController {
 
             // Set the on-close request for the dashboard window
             dashboardStage.setOnCloseRequest(event -> {
-                System.out.println("Dashboard is closing! Removing user from list...");
 
                 // Send an HTTP request to remove the user from the set
                 String finalUrl = "http://localhost:8080/server_Web/removeuser";  // Update with the actual URL
@@ -138,7 +133,6 @@ public class LoginController {
 
                     @Override
                     public void onResponse(@NotNull okhttp3.Call call, @NotNull okhttp3.Response response) throws IOException {
-                        System.out.println("Remove User Servlet Response Code: " + response.code());
                         if (response.code() == HttpServletResponse.SC_OK) {
                             System.out.println("User removed successfully.");
                         } else {
@@ -171,11 +165,6 @@ public class LoginController {
         errorMessageProperty.set("");
     }
 
-    // Exits the application when the quit button is clicked
-    @FXML
-    private void quitButtonClicked(ActionEvent event) {
-        Platform.exit();
-    }
 
 
     // Set primary stage to handle switching between windows

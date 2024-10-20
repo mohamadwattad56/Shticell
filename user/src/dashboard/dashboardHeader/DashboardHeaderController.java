@@ -96,7 +96,6 @@ public class DashboardHeaderController {
                     Map<String, SpreadsheetManagerDTO> spreadsheetManagerMap = gson.fromJson(responseData, type);
 
                     if (spreadsheetManagerMap.isEmpty()) {
-                        System.out.println("No files uploaded yet.");
                         return;
                     }
 
@@ -152,8 +151,6 @@ public class DashboardHeaderController {
         if (selectedFile != null) {
             filePathField.setText(selectedFile.getAbsolutePath());
             uploadFileToServer(selectedFile); // Upload the file to the server
-        } else {
-            System.out.println("No file selected");
         }
     }
 
@@ -181,7 +178,6 @@ public class DashboardHeaderController {
                 Platform.runLater(() -> {
                 //    progressBar.setProgress(1.0);
                     if (response.isSuccessful()) {
-                        System.out.println("File uploaded successfully!");
                         showSuccessHint("File uploaded successfully!");
 
                         if (mainDashboardController != null) {

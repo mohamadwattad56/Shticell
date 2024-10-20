@@ -2,8 +2,6 @@ package gridPageController.headController;
 import com.google.gson.Gson;
 import dashboard.mainDashboardController.MainDashboardController;
 import dto.CellDTO;
-import dto.CellUpdateDTO;
-import dto.SpreadsheetManagerDTO;
 import dto.VersionDTO;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
@@ -23,6 +21,7 @@ import okhttp3.*;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import javafx.scene.layout.VBox;
 import org.jetbrains.annotations.NotNull;
@@ -32,9 +31,7 @@ public class HeadController {
 
     private appController appController;
 
-    // Link to UI elements in the FXML
-    @FXML
-    private Label label;
+
     @FXML
     private ComboBox<String> skinSelector;
     @FXML
@@ -50,28 +47,10 @@ public class HeadController {
     @FXML
     private Button versionSelectorButton;
     @FXML
-    private VBox header;
-    @FXML
     private Label modifiedBy;
-    @FXML
-    private TextField selectedDynamicCellIdField;
-    @FXML
-    private TextField minValueField;
-    @FXML
-    private TextField maxValueField;
-    @FXML
-    private TextField stepSizeField;
-    @FXML
-    private Slider dynamicAnalysisSlider;
-    @FXML
-    private Button applyButton;
-    @FXML
-    private Button cancelButton;
    @FXML
     private Button backButton;
 
-    private SpreadsheetManagerDTO savedSpreadsheetState;  // Store original sheet state during analysis
-    private boolean dynamicAnalysisSetup = false;  // A flag to track whether setupDynamicAnalysis has been called
 
     @FXML
     private void initialize() {
@@ -92,195 +71,10 @@ public class HeadController {
             appController.changeSkin(selectedSkin);  // Call the method in appController to change the skin
         });
 
-        // Add listeners for Apply and Cancel buttons
-        applyButton.setOnAction(event -> handleApplyChanges());
-        cancelButton.setOnAction(event -> handleCancelChanges());
         backButton.setOnAction(event -> handleBackButton());
-        // Add listener to the slider to trigger dynamic analysis when the slider value changes
-        dynamicAnalysisSlider.valueProperty().addListener((observable, oldValue, newValue) -> {
-            // Check if the setup has been done
-            if (!dynamicAnalysisSetup && areFieldsValidForDynamicAnalysis()) {
-                setupDynamicAnalysis();  // Set up dynamic analysis when the slider is first moved
-            }
 
-            // Perform dynamic analysis if the setup is complete
-            if (dynamicAnalysisSetup) {
-                String selectedCellId = selectedDynamicCellIdField.getText();
-                if (selectedCellId != null && !selectedCellId.isEmpty()) {
-                    performDynamicAnalysis(selectedCellId, newValue.doubleValue(), (Double) oldValue);
-                } else {
-                    appController.showError("Error", "No cell selected for dynamic analysis.");
-                }
-            }
-        });
     }
 
-    private boolean areFieldsValidForDynamicAnalysis() {
-        // Check if all necessary fields are not empty
-        return !selectedDynamicCellIdField.getText().isEmpty()
-                && !minValueField.getText().isEmpty()
-                && !maxValueField.getText().isEmpty()
-                && !stepSizeField.getText().isEmpty();
-    }
-
-    // Setup for starting dynamic analysis
-    @FXML
-    private void setupDynamicAnalysis() {
-        String selectedCellId = selectedDynamicCellIdField.getText();
-        String minValue = minValueField.getText();
-        String maxValue = maxValueField.getText();
-        String stepSize = stepSizeField.getText();
-
-        if (selectedCellId.isEmpty() || minValue.isEmpty() || maxValue.isEmpty() || stepSize.isEmpty()) {
-            appController.showError("Error", "Please fill in all fields for dynamic analysis.");
-            return;
-        }
-
-        try {
-            double min = Double.parseDouble(minValue);
-            double max = Double.parseDouble(maxValue);
-            double step = Double.parseDouble(stepSize);
-
-            if (min >= max || step <= 0) {
-                appController.showError("Error", "Invalid range or step size.");
-                return;
-            }
-
-            // Save the current state of the spreadsheet
-            saveCurrentSpreadsheetState();
-
-            // Setup the slider for dynamic analysis
-            dynamicAnalysisSlider.setMin(min);
-            dynamicAnalysisSlider.setMax(max);
-            dynamicAnalysisSlider.setBlockIncrement(step);
-            dynamicAnalysisSlider.setMajorTickUnit(step);
-            dynamicAnalysisSlider.setValue(min);
-
-            // Notify the server to start dynamic analysis for the user
-            startDynamicAnalysisOnServer(selectedCellId);
-
-            // Mark the setup as completed
-            dynamicAnalysisSetup = true;
-
-        } catch (NumberFormatException e) {
-            appController.showError("Error", "Please enter valid numerical values.");
-        }
-    }
-
-    // Start dynamic analysis on the server
-    private void startDynamicAnalysisOnServer(String selectedCellId) {
-        OkHttpClient client = new OkHttpClient();
-        String url = "http://localhost:8080/server_Web/dynamicAnalysis";
-
-        // Debug print
-        System.out.println("Starting dynamic analysis for cellId: " + selectedCellId);
-
-        // Prepare the request body with the necessary parameters
-        RequestBody requestBody = new FormBody.Builder()
-                .add("action", "start")
-                .add("sheetName", this.appController.getSpreadsheetController().getSpreadsheetManagerDTO().getSpreadsheetDTO().getSheetName())
-                .add("userName", this.appController.getMainDashboardController().getDashboardHeaderController().getDashUserName())
-                .build();
-
-        Request request = new Request.Builder()
-                .url(url)
-                .post(requestBody)
-                .build();
-
-        // Debug print
-        System.out.println("Request sent to: " + url + " with body: " + requestBody);
-
-        // Execute the request
-        client.newCall(request).enqueue(new Callback() {
-            @Override
-            public void onFailure(Call call, IOException e) {
-                // Debug print
-                System.out.println("Failed to start dynamic analysis: " + e.getMessage());
-                Platform.runLater(() -> appController.showError("Error", "Failed to start dynamic analysis."));
-            }
-
-            @Override
-            public void onResponse(Call call, Response response) {
-                // Debug print
-                System.out.println("Dynamic analysis started successfully for cellId: " + selectedCellId);
-                // You can add more actions if needed when the server responds successfully
-            }
-        });
-    }
-
-    // Perform dynamic analysis by updating the temporary sheet with the new value
-    private void performDynamicAnalysis(String cellId, double newValue, double oldValue) {
-        OkHttpClient client = new OkHttpClient();
-        String url = "http://localhost:8080/server_Web/dynamicAnalysis";
-
-        // Debug print
-        System.out.println("Performing dynamic analysis for cellId: " + cellId + " with newValue: " + newValue + " and oldValue: " + oldValue);
-
-        // Prepare the request body with all necessary parameters
-        RequestBody requestBody = new FormBody.Builder()
-                .add("action", "update")
-                .add("sheetName", this.appController.getSpreadsheetController().getSpreadsheetManagerDTO().getSpreadsheetDTO().getSheetName())
-                .add("cellId", cellId)
-                .add("newValue", String.valueOf(newValue))   // New value
-                .add("oldValue", String.valueOf(oldValue))   // Old value
-                .add("modifiedBy", this.appController.getMainDashboardController().getDashboardHeaderController().getDashUserName())
-                .add("userName", this.appController.getMainDashboardController().getDashboardHeaderController().getDashUserName())
-                .build();
-
-        // Debug print
-        System.out.println("Request sent to: " + url + " with body: " + requestBody);
-
-        // Build the POST request
-        Request request = new Request.Builder()
-                .url(url)
-                .post(requestBody)
-                .build();
-        System.out.println("Request aaaa is : " + request);
-
-        // Execute the request asynchronously
-        client.newCall(request).enqueue(new Callback() {
-            @Override
-            public void onFailure(@NotNull Call call, @NotNull IOException e) {
-                // Debug print
-                System.out.println("Failed to update temporary values: " + e.getMessage());
-                Platform.runLater(() -> appController.showError("Error", "Failed to update temporary values: " + e.getMessage()));
-            }
-
-            @Override
-            public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
-                // Debug print
-                System.out.println("Server response received for cellId: " + cellId);
-                assert response.body() != null;
-                String responseData = response.body().string();
-
-                // Debug print
-                System.out.println("Server response data: " + responseData);
-
-                Platform.runLater(() -> {
-                    Gson gson = new Gson();
-                    // Process and update the UI with the updated values from the server
-                    try {
-                        // Parse the response into a CellUpdateDTO object
-                        CellUpdateDTO cellUpdateDTO = gson.fromJson(responseData, CellUpdateDTO.class);
-
-                        // Update the main cell
-                        appController.getSpreadsheetController().updateCellInClientDTO(
-                                cellUpdateDTO.getUpdatedCell(),
-                                cellUpdateDTO.getDependentCells(),
-                                cellUpdateDTO.getLastModifiedBy()
-                        );
-
-                        // Refresh the main cell and its dependents visually
-                        appController.getSpreadsheetController().refreshTempCellAndDependents(cellId);
-
-                    } catch (Exception e) {
-                        System.out.println("Error processing server response: " + e.getMessage());
-                        e.printStackTrace();
-                    }
-                });
-            }
-        });
-    }
 
     @FXML
     private void handleBackButton() {
@@ -288,7 +82,6 @@ public class HeadController {
             // Load the main dashboard FXML file
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/dashboard/mainDashboardController/mainDashboard.fxml"));
             Parent dashboardRoot = loader.load();
-            System.out.println("FXML successfully loaded: " + (dashboardRoot != null));
 
             // Get the controller and set the username (you may want to pass the stored username)
             MainDashboardController dashboardController = loader.getController();
@@ -309,160 +102,45 @@ public class HeadController {
             currentStage.show();
 
         } catch (IOException e) {
-            e.printStackTrace();
             appController.showError("Error", "Failed to navigate back to the dashboard.");
         }
     }
 
 
-
-
-
-
-    // Update the UI with the new temporary values from the server
-    private void updateSpreadsheetWithServerData(String responseData, String cellId) {
-        Gson gson = new Gson();
-
-        try {
-            // Parse the response into a CellUpdateDTO object
-            CellUpdateDTO cellUpdateDTO = gson.fromJson(responseData, CellUpdateDTO.class);
-
-            // Update the main cell
-            this.appController.getSpreadsheetController().updateCellInClientDTO(
-                    cellUpdateDTO.getUpdatedCell(),
-                    cellUpdateDTO.getDependentCells(),
-                    cellUpdateDTO.getLastModifiedBy()
-            );
-
-            // Refresh the main cell and its dependents visually
-            this.appController.getSpreadsheetController().refreshTempCellAndDependents(cellId);
-
-        } catch (Exception e) {
-            System.out.println("Error processing server response: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
-
-
-
-    // Apply changes permanently
-    @FXML
-    private void handleApplyChanges() {
-        OkHttpClient client = new OkHttpClient();
-        String url = "http://localhost:8080/server_Web/dynamicAnalysis";
-
-        // Prepare the request body with the necessary parameters
-        RequestBody requestBody = new FormBody.Builder()
-                .add("action", "apply")
-                .add("sheetName", this.appController.getSpreadsheetController().getSpreadsheetManagerDTO().getSpreadsheetDTO().getSheetName())
-                .add("userName", this.appController.getMainDashboardController().getDashboardHeaderController().getDashUserName())
-                .build();
-
-        Request request = new Request.Builder()
-                .url(url)
-                .post(requestBody)
-                .build();
-
-        // Execute the request
-        client.newCall(request).enqueue(new Callback() {
-            @Override
-            public void onFailure(Call call, IOException e) {
-                Platform.runLater(() -> appController.showError("Error", "Failed to apply changes."));
-            }
-
-            @Override
-            public void onResponse(Call call, Response response) {
-                Platform.runLater(() -> showSuccess("Changes Applied", "Dynamic analysis changes have been applied."));
-            }
-        });
-    }
-
-
-    // Cancel the dynamic analysis, revert to the saved state
-    @FXML
-    private void handleCancelChanges() {
-        OkHttpClient client = new OkHttpClient();
-        String url = "http://localhost:8080/server_Web/dynamicAnalysis";
-
-        // Prepare the request body with the necessary parameters
-        RequestBody requestBody = new FormBody.Builder()
-                .add("action", "cancel")
-                .add("sheetName", this.appController.getSpreadsheetController().getSpreadsheetManagerDTO().getSpreadsheetDTO().getSheetName())
-                .add("userName", this.appController.getMainDashboardController().getDashboardHeaderController().getDashUserName())
-                .build();
-
-        Request request = new Request.Builder()
-                .url(url)
-                .post(requestBody)
-                .build();
-
-        // Execute the request
-        client.newCall(request).enqueue(new Callback() {
-            @Override
-            public void onFailure(Call call, IOException e) {
-                Platform.runLater(() -> appController.showError("Error", "Failed to cancel dynamic analysis."));
-            }
-
-            @Override
-            public void onResponse(Call call, Response response) {
-                Platform.runLater(() -> showSuccess("Changes Canceled", "Dynamic analysis changes have been canceled."));
-            }
-        });
-
-        // Revert to the saved state
-        revertToSavedSpreadsheetState();
-    }
-
-
-    // Save the current state of the spreadsheet for potential rollback
-    private void saveCurrentSpreadsheetState() {
-        savedSpreadsheetState = this.appController.getSpreadsheetController().getSpreadsheetManagerDTO().clone();  // Assuming clone() creates a deep copy
-    }
-
-    // Revert the spreadsheet to its original state before the dynamic analysis
-    private void revertToSavedSpreadsheetState() {
-        this.appController.getSpreadsheetController().setSpreadsheetManagerDTO(savedSpreadsheetState);
-        //this.appController.getSpreadsheetController().refreshSheetWithOriginalValues();
-    }
-
-    public void showSuccess(String title, String message) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
-    }
-
-
-
-    public Button getUpdateValueButton() {
-        return updateValueButton;
-    }
-
-    // Example method to be called when the "Update value" Button is clicked
-    private void handleUpdateValue() throws UnsupportedEncodingException {
+    private void handleUpdateValue() {
         String cellIdentifier = selectedCellIdField.getText();
         String newValue = originalCellValueField.getText();
         String oldValue = appController.getSpreadsheetController().getSpreadsheet().getCellDTO(cellIdentifier).getSourceValue().toString();
 
-        // Call the updateCellValue method in SpreadsheetController
-        appController.getSpreadsheetController().updateCellValue(cellIdentifier, newValue, oldValue);
+        try {
+            // Call the updateCellValue method in SpreadsheetController and handle the future
+            appController.getSpreadsheetController()
+                    .updateCellValue(cellIdentifier, newValue, oldValue)
+                    .handle((result, ex) -> {
+                        if (ex != null) {
+                            // Handle the exception if present
+                            Platform.runLater(() -> appController.showError("Update Error", ex.getMessage()));
+                        } else {
+                            // Update UI only if the operation succeeded
+                            Platform.runLater(() -> {
+                                String tmp = "By user: " + appController.getMainDashboardController().getDashboardHeaderController().getDashUserName();
+                                lastUpdateCellVersionField.setText("Last update cell version: " + appController.getSpreadsheetController().getSpreadsheet().getCurrentVersion());
+                                modifiedBy.setText(tmp);
+                            });
+                        }
+                        return null;  // Return null since we don't need a result here
+                    });
 
-        String tmp = "By user: " + this.appController.getMainDashboardController().getDashboardHeaderController().getDashUserName();
+        } catch (Exception ignored) {
 
-        // Update the lastUpdateCellVersionField
-        lastUpdateCellVersionField.setText("Last update cell version : " + String.valueOf(appController.getSpreadsheetController().getSpreadsheet().getCurrentVersion()));
-        modifiedBy.setText(tmp);
+        }
     }
+
 
     public Label getModifiedBy() {
         return modifiedBy;
     }
 
-
-    public TextField getSelectedDynamicCellIdField(){
-        return selectedDynamicCellIdField;
-    }
     public void setMainController(appController appController) {
         this.appController = appController;
     }
@@ -483,7 +161,6 @@ public class HeadController {
 
         Platform.runLater(() -> {
             if (originalCellValueField != null && updateValueButton != null) {
-                System.out.println("Disabling originalCellValueField and updateValueButton");
                 originalCellValueField.setEditable(false);  // Make the field non-editable but still visible
                 updateValueButton.setDisable(true);  // Disable the update button
             } else {
@@ -506,7 +183,7 @@ public class HeadController {
             // Construct the URL with URL-encoded sheet name
             String url = String.format(
                     "http://localhost:8080/server_Web/getVersionHistory?sheetName=%s",
-                    URLEncoder.encode(this.appController.getSpreadsheetController().getSpreadsheet().getSpreadsheetDTO().getSheetName(), "UTF-8")
+                    URLEncoder.encode(this.appController.getSpreadsheetController().getSpreadsheet().getSpreadsheetDTO().getSheetName(), StandardCharsets.UTF_8)
             );
 
             Request request = new Request.Builder()
@@ -516,12 +193,13 @@ public class HeadController {
 
             client.newCall(request).enqueue(new Callback() {
                 @Override
-                public void onFailure(Call call, IOException e) {
+                public void onFailure(@NotNull Call call, @NotNull IOException e) {
                     Platform.runLater(() -> System.out.println("Failed to fetch version history: " + e.getMessage()));
                 }
 
                 @Override
-                public void onResponse(Call call, Response response) throws IOException {
+                public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
+                    assert response.body() != null;
                     String responseData = response.body().string();
 
                     Platform.runLater(() -> {
@@ -593,7 +271,7 @@ public class HeadController {
             String url = String.format(
                     "http://localhost:8080/server_Web/getVersion?versionNumber=%d&sheetName=%s",
                     versionNumber,
-                    URLEncoder.encode(this.appController.getSpreadsheetController().getSpreadsheet().getSpreadsheetDTO().getSheetName(), "UTF-8")
+                    URLEncoder.encode(this.appController.getSpreadsheetController().getSpreadsheet().getSpreadsheetDTO().getSheetName(), StandardCharsets.UTF_8)
             );
 
             Request request = new Request.Builder()
@@ -603,12 +281,13 @@ public class HeadController {
 
             client.newCall(request).enqueue(new Callback() {
                 @Override
-                public void onFailure(Call call, IOException e) {
+                public void onFailure(@NotNull Call call, @NotNull IOException e) {
                     Platform.runLater(() -> System.out.println("Failed to fetch version: " + e.getMessage()));
                 }
 
                 @Override
-                public void onResponse(Call call, Response response) throws IOException {
+                public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
+                    assert response.body() != null;
                     String responseData = response.body().string();
                     Platform.runLater(() -> {
                         Gson gson = new Gson();
@@ -804,9 +483,5 @@ public class HeadController {
         return cellId.replaceAll("[0-9]", "").charAt(0) - 'A' + 1;
     }
 
-
-    public Button getVersionButton() {
-        return versionButton;
-    }
 
 }

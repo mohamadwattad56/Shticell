@@ -117,8 +117,6 @@ public class MainDashboardController {
     public void setDashUserName(String dashUserName) {
         if (dashboardHeaderController != null) {
             dashboardHeaderController.setDashUserName(dashUserName);
-        } else {
-            System.out.println("DashboardHeaderController is null!");
         }
     }
 
@@ -131,11 +129,11 @@ public class MainDashboardController {
     }
 
 
-    // Called when a sheet is selected in the table
     public void handleSheetSelection(String sheetName, String uploader) throws UnsupportedEncodingException {
         // Initialize or restart the periodic fetch
         startPeriodicFetch(sheetName, uploader);
     }
+
     private void stopPeriodicFetch() {
         if (fetchTimeline != null && fetchTimeline.getStatus() == Animation.Status.RUNNING) {
             fetchTimeline.stop();  // Stop the timeline when it's no longer needed
@@ -146,24 +144,18 @@ public class MainDashboardController {
         // Stop any existing fetch timeline to avoid multiple fetching loops
         if (fetchTimeline != null) {
             fetchTimeline.stop();
-            System.out.println("Stopping existing timeline...");
         }
 
         // Create a new timeline to fetch data every 200ms
         fetchTimeline = new Timeline(new KeyFrame(Duration.millis(200), event -> {
-            System.out.println("Fetching sheet permissions for sheet: " + sheetName + ", uploader: " + uploaderName);
             fetchSheetPermissions(sheetName, uploaderName);
         }));
 
         fetchTimeline.setCycleCount(Timeline.INDEFINITE);  // Run indefinitely
         fetchTimeline.play();  // Start fetching
-        System.out.println("Timeline started for periodic fetch.");
     }
 
-
-
     public void fetchSheetPermissions(String sheetName, String uploaderName) {
-        System.out.println("Inside fetchSheetPermissions for: " + sheetName + " by " + uploaderName);
 
         OkHttpClient client = new OkHttpClient();
         String url = "http://localhost:8080/server_Web/getAllPermissions?sheetName=" + sheetName + "&uploaderName=" + uploaderName;
@@ -183,29 +175,23 @@ public class MainDashboardController {
             public void onResponse(Call call, Response response) throws IOException {
                 try {
                     String responseData = response.body().string();
-                    System.out.println("Response Data: " + responseData);  // Log response data
 
                     Gson gson = new Gson();
                     PermissionRequestDTO[] permissionInfoArray = gson.fromJson(responseData, PermissionRequestDTO[].class);
 
                     // Log permissions
-                    System.out.println("Permissions Parsed: " + Arrays.toString(permissionInfoArray));
 
                     Platform.runLater(() -> {
-                        System.out.println("Updating permissions table and tableView1...");
                         updatePermissionsTable(Arrays.asList(permissionInfoArray), uploaderName);
                         updateTableView1Permissions(Arrays.asList(permissionInfoArray), uploaderName, sheetName);
-                        System.out.println("Tables updated successfully.");
                     });
                 } catch (Exception e) {
                     e.printStackTrace();  // Catch any exceptions
                     System.out.println("Error in onResponse: " + e.getMessage());
                 }
             }
-
         });
     }
-
 
     private void updatePermissionsTable(List<PermissionRequestDTO> permissions, String uploaderName) {
         TableView<DashboardTablesController.PermissionRowData> tableView2 = this.dashboardTablesController.getTableView2(); // Assuming you have this method to get tableView2
@@ -239,40 +225,27 @@ public class MainDashboardController {
     }
 
     private void updateTableView1Permissions(List<PermissionRequestDTO> permissions, String uploaderName, String sheetName) {
+        String currentUser = this.dashboardHeaderController.getDashUserName();  // Get the current user's username
         TableView<DashboardTablesController.SheetRowData> tableView1 = this.dashboardTablesController.getTableView1();  // Get TableView1
-        ObservableList<DashboardTablesController.SheetRowData> currentItems = tableView1.getItems();  // Current items in the table
 
-        // Create the new data based on the permissions
-        List<DashboardTablesController.SheetRowData> updatedData = permissions.stream()
-                .map(permission -> {
-                    String permissionType = permission.getRequestStatus().name();
-                    return new DashboardTablesController.SheetRowData(
-                            uploaderName,  // Use the actual uploader for the sheet
-                            permission.getSheetName(),  // Correct sheet name
-                            "Sheet Size Placeholder",  // You can replace this with the actual sheet size if available
-                            permissionType);  // Permission type
-                })
-                .collect(Collectors.toList());
+        // Find the current user's permission for the selected sheet
+        for (PermissionRequestDTO permission : permissions) {
+            if (permission.getUsername().equals(currentUser)) {
+                // Find the corresponding row in tableView1 for the current user and update the permission
+                for (DashboardTablesController.SheetRowData rowData : tableView1.getItems()) {
+                    if (rowData.getSheetName().equals(sheetName)) {  // Compare sheet names
+                        // Update the permission in the row if it's changed
+                        if (!rowData.getPermission().equals(permission.getPermissionType()) && permission.getRequestStatus().equals(PermissionRequestDTO.RequestStatus.APPROVED)) {
 
-        // Stop periodic fetch while updating the table to prevent conflicts
-        stopPeriodicFetch();
-
-        // Update the current data without adding duplicates or incorrect entries
-        for (DashboardTablesController.SheetRowData newData : updatedData) {
-            boolean exists = currentItems.stream()
-                    .anyMatch(existingData ->
-                            existingData.getSheetName().equals(newData.getSheetName()) &&
-                                    existingData.getUploader().equals(newData.getUploader()) &&
-                                        existingData.getPermission().equals(newData.getPermission()));
-
-            // If the row doesn't exist, add it
-            if (!exists) {
-                currentItems.add(newData);
+                            rowData.setPermission(permission.getPermissionType());
+                            tableView1.refresh();  // Refresh the table to show the updated permission
+                        }
+                        break;
+                    }
+                }
+                break;
             }
         }
-
-        // Start periodic fetch again after updating
-        startPeriodicFetch(sheetName, uploaderName);
     }
 
 
@@ -281,42 +254,9 @@ public class MainDashboardController {
 
 
 
-    // Modified method to populate tableView2
-    private void populatePermissionsTable(List<PermissionRequestDTO> permissions, String uploaderName) {
-        TableView<DashboardTablesController.PermissionRowData> tableView2 = this.dashboardTablesController.getTableView2();
 
-        // Only add columns once if they haven't been set
-        if (tableView2.getColumns().isEmpty()) {
-            TableColumn<DashboardTablesController.PermissionRowData, String> usernameCol = new TableColumn<>("Username");
-            TableColumn<DashboardTablesController.PermissionRowData, String> permissionTypeCol = new TableColumn<>("Permission Type");
-            TableColumn<DashboardTablesController.PermissionRowData, String> approvalCol = new TableColumn<>("Approved");
 
-            usernameCol.setCellValueFactory(new PropertyValueFactory<>("userName"));
-            permissionTypeCol.setCellValueFactory(new PropertyValueFactory<>("permissionType"));
-            approvalCol.setCellValueFactory(new PropertyValueFactory<>("status"));
 
-            tableView2.getColumns().addAll(usernameCol, permissionTypeCol, approvalCol);
-        }
-
-        // Convert PermissionRequestDTO to PermissionRowData for display
-        List<DashboardTablesController.PermissionRowData> rowDataList = permissions.stream()
-                .map(permission -> new DashboardTablesController.PermissionRowData(
-                        permission.getUsername(),
-                        permission.getPermissionType(),
-                        permission.getRequestStatus().name())
-                )
-                .collect(Collectors.toList());
-
-        DashboardTablesController.PermissionRowData ownerRow = new DashboardTablesController.PermissionRowData(uploaderName, "OWNER", "APPROVED");
-
-        // Add the ownerRow as the first row
-        rowDataList.add(0, ownerRow);
-
-        // Only update the table if the data has changed
-        if (!tableView2.getItems().equals(rowDataList)) {
-            tableView2.getItems().setAll(rowDataList);
-        }
-    }
 
 
 
@@ -409,7 +349,6 @@ public class MainDashboardController {
 
     private void displaySheet(SpreadsheetManagerDTO spreadsheetManagerDTO, String userPermission) {
         try {
-            System.out.println("Displaying sheet: " + spreadsheetManagerDTO.getSpreadsheetDTO().getSheetName());
 
             // Clear both the top (header) and center content before loading the sheet
             mainLayout.setTop(null);  // Remove the dashboard header before loading the sheet header
@@ -426,10 +365,7 @@ public class MainDashboardController {
 
             // Disable editing features if the user is not a WRITER
             if (userPermission.equals("READER")) {
-                System.out.println("Disabling editing features for READER permission.");
                 disableEditingFeatures();
-            } else {
-                System.out.println("Permission allows editing: " + userPermission);
             }
 
             // Replace the dashboard content with the sheet layout
@@ -448,11 +384,9 @@ public class MainDashboardController {
 
 
     public void disableEditingFeatures() {
-        System.out.println("Disabling editing features for READER permission");
 
         // Ensure this runs on the JavaFX Application thread
         Platform.runLater(() -> {
-            System.out.println("Inside Platform.runLater for disableEditingFeatures");
 /*
            getAppController().getSpreadsheetController().disableEditing();
 */

@@ -67,7 +67,7 @@ public class DashboardTablesController {
         private final String uploader;
         private final String sheetName;
         private final String sheetSize;
-        private final String permission;
+        private String permission;
 
         public SheetRowData(String uploader, String sheetName, String sheetSize, String permission) {
             this.uploader = uploader;
@@ -90,6 +90,9 @@ public class DashboardTablesController {
 
         public String getPermission() {
             return permission;
+        }
+        public void setPermission(String permission) {
+            this.permission = permission;
         }
     }
 
