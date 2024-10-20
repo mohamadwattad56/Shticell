@@ -1,7 +1,7 @@
 package function.impl;
 import cell.api.Cell;
 
-public class CONCAT extends AbstractFunctioUtils{
+public class CONCAT extends AbstractFunctionsUtils {
 
     @Override
     public Object apply(Cell... args) {

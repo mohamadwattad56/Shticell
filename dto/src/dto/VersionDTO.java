@@ -7,13 +7,14 @@ public class VersionDTO {
     private final SpreadsheetDTO spreadsheetDTO;
     private final int changedCellsCount;
 
-
+    //ctor
     public VersionDTO(int versionNumber, SpreadsheetDTO spreadsheetDTO, int changedCellsCount) {
         this.versionNumber = versionNumber;
         this.spreadsheetDTO = spreadsheetDTO;
         this.changedCellsCount = changedCellsCount;
     }
 
+    //getters
     public int getVersionNumber() {
         return versionNumber;
     }

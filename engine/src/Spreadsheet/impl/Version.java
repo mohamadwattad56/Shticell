@@ -9,12 +9,14 @@ public class Version implements Serializable, Cloneable {
     private final Spreadsheet spreadsheetSnapshot;
     private final int changedCellsCount;
 
+    //Ctor
     public Version(int versionNumber, Spreadsheet spreadsheetSnapshot, int changedCellsCount) {
         this.versionNumber = versionNumber;
         this.spreadsheetSnapshot = spreadsheetSnapshot;
         this.changedCellsCount = changedCellsCount;
     }
 
+    //Getter
     public int getVersionNumber() {
         return versionNumber;
     }
@@ -23,17 +25,15 @@ public class Version implements Serializable, Cloneable {
         return changedCellsCount;
     }
 
-    public VersionDTO toDTO() {
-        return new VersionDTO(versionNumber, spreadsheetSnapshot.toDTO(), changedCellsCount);
-    }
-
+    //Functions
     @Override
     public Version clone() {
-        // Clone the spreadsheet snapshot
         Spreadsheet clonedSpreadsheetSnapshot = this.spreadsheetSnapshot.clone();
-
-        // Return a new Version instance using the private constructor
         return new Version(this.versionNumber, clonedSpreadsheetSnapshot, this.changedCellsCount);
 
+    }
+
+    public VersionDTO toDTO() {
+        return new VersionDTO(versionNumber, spreadsheetSnapshot.toDTO(), changedCellsCount);
     }
 }

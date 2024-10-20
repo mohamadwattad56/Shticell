@@ -2,7 +2,7 @@ package function.impl;
 
 import cell.api.Cell;
 
-public class EQUAL extends AbstractFunctioUtils{
+public class EQUAL extends AbstractFunctionsUtils {
 
     @Override
     public Object apply(Cell... args) {

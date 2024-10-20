@@ -20,13 +20,6 @@ public class FunctionValidator {
                 throw new IllegalArgumentException("Unknown function: " + functionName);
 
         }
-       /* for (Cell arg : args) {
-            Object argValue = arg.evaluate();
-            if (argValue.equals("!UNDEFINED!")) {
-                // If any argument is undefined, the whole function is invalid
-                throw new IllegalArgumentException("Invalid argument type for function: " + functionName);
-            }
-        }*/
 
     }
 

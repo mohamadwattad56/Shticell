@@ -13,6 +13,9 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import static constant.Constant.SPREADSHEET_MAP;
+import static constant.Constant.UPLOADER_MAP;
+
 @WebServlet("/uploadFile")
 @MultipartConfig
 public class FileUploadServlet extends HttpServlet {
@@ -22,17 +25,17 @@ public class FileUploadServlet extends HttpServlet {
             throws ServletException, IOException {
         try {
             // Initialize or retrieve the stored spreadsheet managers
-            Map<String, SpreadsheetManager> spreadsheetManagerMap = (Map<String, SpreadsheetManager>) getServletContext().getAttribute("spreadsheetManagerMap");
+            Map<String, SpreadsheetManager> spreadsheetManagerMap = (Map<String, SpreadsheetManager>) getServletContext().getAttribute(SPREADSHEET_MAP);
             if (spreadsheetManagerMap == null) {
                 spreadsheetManagerMap = new HashMap<>();
-                getServletContext().setAttribute("spreadsheetManagerMap", spreadsheetManagerMap);
+                getServletContext().setAttribute(SPREADSHEET_MAP, spreadsheetManagerMap);
             }
 
             // Initialize or retrieve the uploader map
-            Map<String, String> uploaderMap = (Map<String, String>) getServletContext().getAttribute("uploaderMap");
+            Map<String, String> uploaderMap = (Map<String, String>) getServletContext().getAttribute(UPLOADER_MAP);
             if (uploaderMap == null) {
                 uploaderMap = new HashMap<>();
-                getServletContext().setAttribute("uploaderMap", uploaderMap);
+                getServletContext().setAttribute(UPLOADER_MAP, uploaderMap);
             }
 
             // Get the file path and uploader name from the request
@@ -59,11 +62,11 @@ public class FileUploadServlet extends HttpServlet {
 
                 // Store the SpreadsheetManager in the global map
                 spreadsheetManagerMap.put(sheetName, spreadsheetManager);
-                getServletContext().setAttribute("spreadsheetManagerMap", spreadsheetManagerMap);
+                getServletContext().setAttribute(SPREADSHEET_MAP, spreadsheetManagerMap);
 
                 // Store the uploader name in the uploaderMap
                 uploaderMap.put(sheetName, uploaderName);
-                getServletContext().setAttribute("uploaderMap", uploaderMap);
+                getServletContext().setAttribute(UPLOADER_MAP, uploaderMap);
 
                 // Convert the SpreadsheetManager to DTO for easier transmission
                 SpreadsheetManagerDTO spreadsheetManagerDTO = spreadsheetManager.toDTO(uploaderName);

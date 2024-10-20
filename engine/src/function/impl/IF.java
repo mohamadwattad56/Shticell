@@ -2,7 +2,7 @@ package function.impl;
 
 import cell.api.Cell;
 
-public class IF extends AbstractFunctioUtils{
+public class IF extends AbstractFunctionsUtils {
     @Override
     public Object apply(Cell... args) {
         Object condition = args[0].evaluate();

@@ -13,6 +13,8 @@ import Spreadsheet.impl.SpreadsheetManager;
 import java.io.IOException;
 import java.util.Map;
 
+import static constant.Constant.*;
+
 @WebServlet("/getSpreadsheet")
 public class GetSpreadsheetServlet extends HttpServlet {
 
@@ -20,15 +22,15 @@ public class GetSpreadsheetServlet extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        String sheetName = request.getParameter("sheetName");
-        String userName = request.getParameter("userName"); // The user requesting the sheet
+        String sheetName = request.getParameter(SHEET_NAME);
+        String userName = request.getParameter(USERNAME); // The user requesting the sheet
 
         // Retrieve the spreadsheet manager map
         Map<String, SpreadsheetManager> spreadsheetManagerMap =
-                (Map<String, SpreadsheetManager>) getServletContext().getAttribute("spreadsheetManagerMap");
+                (Map<String, SpreadsheetManager>) getServletContext().getAttribute(SPREADSHEET_MAP);
 
         // Retrieve the uploader map
-        Map<String, String> uploaderMap = (Map<String, String>) getServletContext().getAttribute("uploaderMap");
+        Map<String, String> uploaderMap = (Map<String, String>) getServletContext().getAttribute(UPLOADER_MAP);
 
         if (spreadsheetManagerMap == null || spreadsheetManagerMap.isEmpty()) {
             response.sendError(HttpServletResponse.SC_NOT_FOUND, "No sheets found.");

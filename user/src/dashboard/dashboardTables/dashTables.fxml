@@ -3,26 +3,26 @@
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.layout.VBox?>
-<VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/22" xmlns:fx="http://javafx.com/fxml/1" fx:controller="dashboard.dashboardTables.DashboardTablesController">
-    <children>
-        <!-- First TableView -->
-        <TableView fx:id="tableView1" VBox.vgrow="ALWAYS">
-            <columns>
-                <TableColumn fx:id="uploaderColumn" prefWidth="131.20001220703125" text="Uploader" />
-                <TableColumn fx:id="sheetNameColumn" prefWidth="144.0" text="Sheet Name" />
-                <TableColumn fx:id="sheetSizeColumn" prefWidth="149.60003662109375" text="Sheet Size" />
-                <TableColumn fx:id="permissionColumn" prefWidth="175.20001220703125" text="Permission" />
-            </columns>
-        </TableView>
+<VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0"
+      prefWidth="600.0" xmlns="http://javafx.com/javafx/22" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="dashboard.dashboardTables.DashboardTablesController">
+    <!-- First TableView -->
+    <TableView fx:id="tableView1" VBox.vgrow="ALWAYS">
+        <columns>
+            <TableColumn fx:id="uploaderColumn" prefWidth="131.20001220703125" text="Uploader"/>
+            <TableColumn fx:id="sheetNameColumn" prefWidth="144.0" text="Sheet Name"/>
+            <TableColumn fx:id="sheetSizeColumn" prefWidth="149.60003662109375" text="Sheet Size"/>
+            <TableColumn fx:id="permissionColumn" prefWidth="175.20001220703125" text="permission"/>
+        </columns>
+    </TableView>
 
-        <!-- Second TableView -->
-        <TableView fx:id="tableView2" VBox.vgrow="ALWAYS">
-            <columns>
-                <TableColumn fx:id="userNameColumn" prefWidth="193.5999755859375" text="User Name" />
-                <TableColumn fx:id="permissionTypeColumn" prefWidth="194.4000244140625" text="Permission Type" />
-                <TableColumn fx:id="permissionStatusColumn" prefWidth="213.60003662109375" text="Permission Status" />
-            </columns>
-        </TableView>
-    </children>
+    <!-- Second TableView -->
+    <TableView fx:id="tableView2" VBox.vgrow="ALWAYS">
+        <columns>
+            <TableColumn fx:id="userNameColumn" prefWidth="193.5999755859375" text="User Name"/>
+            <TableColumn fx:id="permissionTypeColumn" prefWidth="194.4000244140625" text="permission Type"/>
+            <TableColumn fx:id="permissionStatusColumn" prefWidth="213.60003662109375" text="permission Status"/>
+        </columns>
+    </TableView>
 </VBox>
 

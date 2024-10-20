@@ -2,7 +2,7 @@ package function.impl;
 
 import cell.api.Cell;
 
-public class PERCENT extends AbstractFunctioUtils{
+public class PERCENT extends AbstractFunctionsUtils {
     @Override
     public Object apply(Cell... args) {
         // Extract the evaluated values from the arguments
@@ -21,8 +21,7 @@ public class PERCENT extends AbstractFunctioUtils{
         double part = Double.parseDouble(partStr);
         double whole = Double.parseDouble(wholeStr);
 
-        double result = (part * whole) / 100.0;
-        return result;
+        return (part * whole) / 100.0;
     }
 
     @Override

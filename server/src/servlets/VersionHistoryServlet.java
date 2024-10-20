@@ -1,16 +1,15 @@
 package servlets;
-
 import Spreadsheet.impl.SpreadsheetManager;
 import com.google.gson.Gson;
-import dto.VersionDTO;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import static constant.Constant.SHEET_NAME;
+import static constant.Constant.SPREADSHEET_MAP;
 
 @WebServlet("/getVersionHistory")
 public class VersionHistoryServlet extends HttpServlet {
@@ -18,11 +17,11 @@ public class VersionHistoryServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
         // Get spreadsheet name or ID from the request
-        String sheetName = request.getParameter("sheetName");
+        String sheetName = request.getParameter(SHEET_NAME);
 
         // Retrieve the spreadsheet map from ServletContext (as SpreadsheetManager)
         Map<String, SpreadsheetManager> spreadsheetManagerMap =
-                (Map<String, SpreadsheetManager>) getServletContext().getAttribute("spreadsheetManagerMap");
+                (Map<String, SpreadsheetManager>) getServletContext().getAttribute(SPREADSHEET_MAP);
 
         SpreadsheetManager spreadsheetManager = spreadsheetManagerMap.get(sheetName);
 

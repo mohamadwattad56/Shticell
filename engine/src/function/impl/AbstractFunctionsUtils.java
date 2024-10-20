@@ -3,7 +3,7 @@ package function.impl;
 import cell.api.Cell;
 import function.api.Functions;
 
-abstract public class AbstractFunctioUtils implements Functions {
+abstract public class AbstractFunctionsUtils implements Functions {
 
     // Common logic for all subclasses
     protected double convertToNumber(Object value) {

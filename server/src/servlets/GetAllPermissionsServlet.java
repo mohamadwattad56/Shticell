@@ -12,13 +12,16 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
+import static constant.Constant.SHEET_NAME;
+import static constant.Constant.SPREADSHEET_MAP;
+
 @WebServlet("/getAllPermissions")
 public class GetAllPermissionsServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
-        String sheetName = request.getParameter("sheetName");
+        String sheetName = request.getParameter(SHEET_NAME);
 
         if (sheetName == null) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Missing sheet name");
@@ -27,7 +30,7 @@ public class GetAllPermissionsServlet extends HttpServlet {
 
         // Retrieve the spreadsheet manager map
         Map<String, SpreadsheetManager> spreadsheetManagerMap =
-                (Map<String, SpreadsheetManager>) getServletContext().getAttribute("spreadsheetManagerMap");
+                (Map<String, SpreadsheetManager>) getServletContext().getAttribute(SPREADSHEET_MAP);
 
         SpreadsheetManager spreadsheetManager = spreadsheetManagerMap.get(sheetName);
 

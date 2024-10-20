@@ -20,7 +20,6 @@ import javafx.stage.Stage;
 import javafx.util.Duration;
 import okhttp3.*;
 import org.jetbrains.annotations.NotNull;
-
 import java.io.IOException;
 import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
@@ -31,6 +30,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import static httputils.Constants.CELL_UPDATE;
 
 public class SpreadsheetController implements Serializable {
 
@@ -44,14 +44,7 @@ public class SpreadsheetController implements Serializable {
     private SpreadsheetManagerDTO spreadsheetManagerDTO;
     private HeadController headController;
     private static final Map<String, Integer> functionArgCounts = new HashMap<>();
-    private ScheduledExecutorService scheduler;
     private boolean isPolling = false;
-
-
-    public SpreadsheetManagerDTO getSpreadsheetManagerDTO() {
-        return spreadsheetManagerDTO;
-    }
-
 
     static {
         functionArgCounts.put("PLUS", 2);
@@ -114,7 +107,7 @@ public class SpreadsheetController implements Serializable {
                 this.appController.getScrollPane().setFitToWidth(false);
 
                 // Add column and row constraints dynamically
-                ColumnsAndRowsConstraints(numberOfColumns, columnWidth, numberOfRows, rowHeight);
+                columnsAndRowsConstraints(numberOfColumns, columnWidth, numberOfRows, rowHeight);
 
                 // Get the current skin's cell class (for styling)
                 String cellClass = this.appController.getCellClassForCurrentSkin();
@@ -162,7 +155,7 @@ public class SpreadsheetController implements Serializable {
                 }
 
                 // Adjust the main container size based on the number of columns/rows
-                SetMainContainerSize(columnWidth, numberOfColumns, rowHeight, numberOfRows);
+                setMainContainerSize(columnWidth, numberOfColumns, rowHeight, numberOfRows);
                 startPollingForNewVersions();
             } catch (Exception e) {
                 appController.showError("Unexpected Error", e.getMessage());
@@ -170,15 +163,12 @@ public class SpreadsheetController implements Serializable {
         });
     }
 
-
-
-
-    private void SetMainContainerSize(double columnWidth, int numberOfColumns, double rowHeight, int numberOfRows) {
+    private void setMainContainerSize(double columnWidth, int numberOfColumns, double rowHeight, int numberOfRows) {
         appController.getMainContainer().setPrefHeight(Double.max(Main_Header_Height + columnWidth * (numberOfColumns + Header_Row_And_Column),appController.getMainContainer().getPrefHeight()));
         appController.getMainContainer().setPrefWidth(Double.max(CommandAndRanges_Section + rowHeight * (numberOfRows + Header_Row_And_Column),appController.getMainContainer().getPrefHeight()));
     }
 
-    private void ColumnsAndRowsConstraints(int numberOfColumns, double columnWidth, int numberOfRows, double rowHeight) {
+    private void columnsAndRowsConstraints(int numberOfColumns, double columnWidth, int numberOfRows, double rowHeight) {
         // Add column constraints dynamically
         for (int j = 0; j <= numberOfColumns; j++) {
             ColumnConstraints columnConstraints = new ColumnConstraints();
@@ -241,6 +231,7 @@ public class SpreadsheetController implements Serializable {
             }
         }
     }
+
     private String convertToValidHex(String color) {
         // Ensure the color is at most 6 or 8 characters long for valid CSS colors
         if (color != null) {
@@ -263,8 +254,6 @@ public class SpreadsheetController implements Serializable {
         }
         return "#000000";  // Default to black if color is null
     }
-
-
 
     private void handleCellClick(String cellIdentifier, String userPermission) {
 
@@ -335,9 +324,7 @@ public class SpreadsheetController implements Serializable {
                 modifiedBy.setText(tmp);
                 // Check the user's permission before showing the popup
                 if (!userPermission.equals("READER")) {
-                    originalCellValueField.setOnMouseClicked(event -> {
-                        showFunctionInputPopup(originalCellValueField);
-                    });
+                    originalCellValueField.setOnMouseClicked(event -> showFunctionInputPopup(originalCellValueField));
                 } else {
                     // Consume the event so nothing happens
                     originalCellValueField.setOnMouseClicked(Event::consume);
@@ -345,10 +332,6 @@ public class SpreadsheetController implements Serializable {
             }
         }
     }
-
-
-
-
 
     private void highlightCell(String cellIdentifier, String highlightClass) {
         for (Node node : spreadsheetGrid.getChildren()) {
@@ -369,8 +352,6 @@ public class SpreadsheetController implements Serializable {
             }
         }
     }
-
-
 
     private void showFunctionInputPopup(TextField originalCellValueField) {
         Stage popupStage = new Stage();
@@ -454,7 +435,6 @@ public class SpreadsheetController implements Serializable {
         popupStage.showAndWait();
     }
 
-
     // Updated method to handle manual value vs function input
     private void updatePreviewLabel(Label previewLabel, String inputValue, Node[] argumentFields, boolean isFunction) {
         StringBuilder functionString = new StringBuilder();
@@ -481,8 +461,6 @@ public class SpreadsheetController implements Serializable {
         calculateLivePreview(functionString.toString(), previewLabel);
     }
 
-
-
     private void calculateLivePreview(String functionString, Label previewLabel) {
         try {
             if (isFunction(functionString)) {
@@ -490,7 +468,7 @@ public class SpreadsheetController implements Serializable {
                 OkHttpClient client = new OkHttpClient();
 
                 // Send both sheetName and functionString to the server
-                String url = String.format("http://localhost:8080/server_Web/calculateLivePreview?sheetName=%s", URLEncoder.encode(this.spreadsheetManagerDTO.getSpreadsheetDTO().getSheetName(), "UTF-8"));
+                String url = String.format("http://localhost:8080/server_Web/calculateLivePreview?sheetName=%s", URLEncoder.encode(this.spreadsheetManagerDTO.getSpreadsheetDTO().getSheetName(), StandardCharsets.UTF_8));
 
                 RequestBody body = RequestBody.create(functionString, MediaType.parse("text/plain"));
                 Request request = new Request.Builder()
@@ -522,8 +500,6 @@ public class SpreadsheetController implements Serializable {
             previewLabel.setText("Error");
         }
     }
-
-
 
     public void showError(String title, String message) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
@@ -588,26 +564,21 @@ public class SpreadsheetController implements Serializable {
                 // OK button logic for function input
                 okButton.setOnAction(okEvent -> {
                     if (finalArgumentFields != null) {
-                        String formulaOnly = null;
-                        switch (selectedFunction) {
-                            case "SUM":
-                            case "AVERAGE":
+                        String formulaOnly = switch (selectedFunction) {
+                            case "SUM", "AVERAGE" -> {
                                 // Extract the selected range from the ComboBox
                                 String selectedRange = ((ComboBox<String>) finalArgumentFields[0]).getValue();
-                                formulaOnly = "{" + selectedFunction + "," + selectedRange + "}";
-                                break;
-
-                            case "REF":
+                                yield "{" + selectedFunction + "," + selectedRange + "}";
+                            }
+                            case "REF" -> {
                                 // Extract the single cell reference from the ComboBox
                                 String selectedRef = ((ComboBox<String>) finalArgumentFields[0]).getValue();
-                                formulaOnly = "{" + selectedFunction + "," + selectedRef + "}";
-                                break;
-
-                            default:
+                                yield "{" + selectedFunction + "," + selectedRef + "}";
+                            }
+                            default ->
                                 // Handle the formula for other functions
-                                formulaOnly = previewLabel.getText().substring(previewLabel.getText().indexOf("{"), previewLabel.getText().lastIndexOf("}") + 1);
-                                break;
-                        }
+                                    previewLabel.getText().substring(previewLabel.getText().indexOf("{"), previewLabel.getText().lastIndexOf("}") + 1);
+                        };
 
                         // Set the formula to the cell and close the popup
                         originalCellValueField.setText(formulaOnly);
@@ -709,18 +680,16 @@ public class SpreadsheetController implements Serializable {
         return new TextField[]{arg1Field, arg2Field, arg3Field};
     }
 
-
     public void setHeadController(HeadController headController) {
         this.headController = headController;
     }
 
-    public CompletableFuture<Void> updateCellValue(String cellIdentifier, String newValue, String oldValue) throws UnsupportedEncodingException {
+    public CompletableFuture<Void> updateCellValue(String cellIdentifier, String newValue, String oldValue) {
         CompletableFuture<Void> future = new CompletableFuture<>();
         int currentVersion = spreadsheetManagerDTO.getCurrentVersion();
-        String uploaderName = spreadsheetManagerDTO.getUploaderName();
 
         String url = String.format(
-                "http://localhost:8080/server_Web/updateCellValue?cellIdentifier=%s&newValue=%s&oldValue=%s&sheetName=%s&versionNumber=%d&userName=%s",
+                CELL_UPDATE + "?cellId=%s&newValue=%s&oldValue=%s&sheetName=%s&versionNumber=%d&userName=%s",
                 URLEncoder.encode(cellIdentifier, StandardCharsets.UTF_8),
                 URLEncoder.encode(newValue, StandardCharsets.UTF_8),
                 URLEncoder.encode(oldValue, StandardCharsets.UTF_8),
@@ -737,12 +706,12 @@ public class SpreadsheetController implements Serializable {
 
         client.newCall(request).enqueue(new Callback() {
             @Override
-            public void onFailure(@NotNull Call call, IOException e) {
+            public void onFailure(@NotNull Call call, @NotNull IOException e) {
                 Platform.runLater(() -> future.completeExceptionally(new Exception("Error updating cell: " + e.getMessage())));
             }
 
             @Override
-            public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
+            public void onResponse(@NotNull Call call, @NotNull Response response) {
                 try {
                     if (response.code() == 409) {
                         // Conflict - process the conflict message
@@ -758,6 +727,7 @@ public class SpreadsheetController implements Serializable {
                     }
 
                     // Success response
+                    assert response.body() != null;
                     String responseData = response.body().string();
                     Gson gson = new Gson();
                     CellUpdateDTO cellUpdateDTO = gson.fromJson(responseData, CellUpdateDTO.class);
@@ -784,43 +754,6 @@ public class SpreadsheetController implements Serializable {
         return future;  // Return the future to be handled in the calling method
     }
 
-
-
-
-
-
-
-
-
-
-
-
-    /*
-    private void refreshCellAndDependents(String cellIdentifier) {
-        // Refresh the value of the cell
-        String updatedValue = spreadsheetManagerDTO.getCellDTO(cellIdentifier).getEffectiveValue().toString();
-        String formattedValue = formatCellValue(updatedValue);
-        for (Node node : spreadsheetGrid.getChildren()) {
-            if (GridPane.getColumnIndex(node) != null && GridPane.getRowIndex(node) != null) {
-                int rowIndex = GridPane.getRowIndex(node);
-                int columnIndex = GridPane.getColumnIndex(node);
-                String currentCellId = getCellIdFromCoordinates(rowIndex, columnIndex);
-                if (currentCellId.equals(cellIdentifier)) {
-                    if (node instanceof Label) {
-                        ((Label) node).setText(formattedValue);
-                    }
-                    break;
-                }
-            }
-        }
-
-        // Find and refresh dependents recursively
-        List<String> dependents = spreadsheetManagerDTO.getCellDTO(cellIdentifier).getDependents();
-        for (String dependentCellId : dependents) {
-            refreshCellAndDependents(dependentCellId); // Recursive call to refresh each dependent cell
-        }
-    }
-*/
     public void refreshCellAndDependents(String cellIdentifier) throws UnsupportedEncodingException {
         // Send request to server to fetch updated cell value and dependents
         OkHttpClient client = new OkHttpClient();
@@ -832,8 +765,8 @@ public class SpreadsheetController implements Serializable {
         String url = String.format(
                 "http://localhost:8080/server_Web/getCellUpdate?cellId=%s&sheetName=%s&userName=%s",
                 cellIdentifier,
-                URLEncoder.encode(spreadsheetManagerDTO.getSpreadsheetDTO().getSheetName(), "UTF-8"),
-                URLEncoder.encode(userName, "UTF-8")
+                URLEncoder.encode(spreadsheetManagerDTO.getSpreadsheetDTO().getSheetName(), StandardCharsets.UTF_8),
+                URLEncoder.encode(userName, StandardCharsets.UTF_8)
         );
 
         Request request = new Request.Builder()
@@ -843,12 +776,13 @@ public class SpreadsheetController implements Serializable {
 
         client.newCall(request).enqueue(new Callback() {
             @Override
-            public void onFailure(@NotNull Call call, IOException e) {
+            public void onFailure(@NotNull Call call, @NotNull IOException e) {
                 Platform.runLater(() -> appController.showError("Error", "Failed to fetch cell updates."));
             }
 
             @Override
             public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
+                assert response.body() != null;
                 String responseData = response.body().string();
 
                 // Log the raw response data from the server
@@ -871,61 +805,6 @@ public class SpreadsheetController implements Serializable {
             }
         });
     }
-
-
-
-    /*public void refreshTempCellAndDependents(String cellIdentifier) throws UnsupportedEncodingException {
-        // Send request to server to fetch updated cell value and dependents from the temporary sheet
-        OkHttpClient client = new OkHttpClient();
-
-        // Include userName (current user viewing the temporary sheet) in the request
-        String userName = appController.getSpreadsheetController().spreadsheetManagerDTO.getCurrentUserName();
-
-        // Construct the URL with query parameters, including the userName
-        String url = String.format(
-                "http://localhost:8080/server_Web/getTempCellUpdate?cellId=%s&sheetName=%s&userName=%s",  // Use the new servlet path
-                URLEncoder.encode(cellIdentifier, "UTF-8"),
-                URLEncoder.encode(spreadsheetManagerDTO.getSpreadsheetDTO().getSheetName(), "UTF-8"),
-                URLEncoder.encode(userName, "UTF-8")
-        );
-
-        Request request = new Request.Builder()
-                .url(url)
-                .get()
-                .build();
-
-        client.newCall(request).enqueue(new Callback() {
-            @Override
-            public void onFailure(@NotNull Call call, IOException e) {
-                Platform.runLater(() -> appController.showError("Error", "Failed to fetch temporary cell updates."));
-            }
-
-            @Override
-            public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
-                String responseData = response.body().string();
-
-                // Log the raw response data from the server
-
-                Platform.runLater(() -> {
-                    Gson gson = new Gson();
-                    try {
-                        // Deserialize the server's response
-                        CellUpdateDTO cellUpdateDTO = gson.fromJson(responseData, CellUpdateDTO.class);
-
-                        // Refresh the cell and dependents based on the updated data received from the server
-                        updateCellInGrid(cellUpdateDTO.getUpdatedCell());
-                        for (CellDTO dependentCell : cellUpdateDTO.getDependentCells()) {
-                            refreshTempCellAndDependents(dependentCell.getCellId());  // Continue refreshing dependents
-                        }
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                });
-            }
-        });
-    }*/
-
-
 
     public void updateCellInClientDTO(CellDTO updatedCell, List<CellDTO> dependentCells, String lastModifiedBy) {
         // Update the cell in the client-side DTO
@@ -959,13 +838,10 @@ public class SpreadsheetController implements Serializable {
         }
     }
 
-
-    // Same as before, update the UI for the specific cell in the grid
     private void updateCellInGrid(CellDTO updatedCell) {
         String currentCellId = updatedCell.getCellId();
         Node cellNode = getCellNodeById(currentCellId);
-        if (cellNode instanceof Label) {
-            Label cellLabel = (Label) cellNode;
+        if (cellNode instanceof Label cellLabel) {
 
             // Update the cell content based on the updated value
             String newValue = updatedCell.getEffectiveValue().toString();
@@ -1015,9 +891,6 @@ public class SpreadsheetController implements Serializable {
 
     }
 
-
-
-
     public void startPollingForNewVersions() {
         if (isPolling) return;  // Prevent multiple polling sessions
         if (spreadsheetManagerDTO == null) {
@@ -1025,7 +898,7 @@ public class SpreadsheetController implements Serializable {
         }
 
         isPolling = true;
-        scheduler = Executors.newSingleThreadScheduledExecutor();
+        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
         scheduler.scheduleAtFixedRate(() -> {
             try {
@@ -1037,14 +910,6 @@ public class SpreadsheetController implements Serializable {
         }, 0, 10, TimeUnit.SECONDS);  // Poll every 10 seconds
     }
 
-
-    public void stopPollingForNewVersions() {
-        if (scheduler != null && !scheduler.isShutdown()) {
-            scheduler.shutdown();
-        }
-        isPolling = false;
-    }
-
     private void checkForNewVersion() throws UnsupportedEncodingException {
         if (spreadsheetManagerDTO == null) {
             return;
@@ -1053,17 +918,18 @@ public class SpreadsheetController implements Serializable {
         // This method should call the server and check for new versions
         OkHttpClient client = new OkHttpClient();
         String sheetName = spreadsheetManagerDTO.getSpreadsheetDTO().getSheetName();
-        String url = "http://localhost:8080/server_Web/getLatestVersion?sheetName=" + URLEncoder.encode(sheetName, "UTF-8");
+        String url = "http://localhost:8080/server_Web/getLatestVersion?sheetName=" + URLEncoder.encode(sheetName, StandardCharsets.UTF_8);
 
         Request request = new Request.Builder().url(url).get().build();
         client.newCall(request).enqueue(new Callback() {
             @Override
-            public void onFailure(@NotNull Call call, IOException e) {
+            public void onFailure(@NotNull Call call, @NotNull IOException e) {
                 Platform.runLater(() -> System.out.println("Failed to check for new versions: " + e.getMessage()));
             }
 
             @Override
             public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
+                assert response.body() != null;
                 String responseData = response.body().string();
                 Platform.runLater(() -> {
                     // Assuming the server returns the latest version number
@@ -1077,14 +943,6 @@ public class SpreadsheetController implements Serializable {
             }
         });
     }
-
-
-
-
-
-
-
-
 
     public String getCellIdFromCoordinates(int row, int column) {
         char columnLetter = (char) ('A' + (column - 1));
@@ -1102,8 +960,6 @@ public class SpreadsheetController implements Serializable {
             }
         }
     }
-
-
 
     public GridPane getGridPane() {
         return this.spreadsheetGrid;
@@ -1138,8 +994,6 @@ public class SpreadsheetController implements Serializable {
         spreadsheetGrid.layout();   // Force layout update
     }
 
-
-
     public void applyHeightToRow(int rowIndex, double newHeight) {
         double oldHeight = spreadsheetGrid.getRowConstraints().get(rowIndex).getPrefHeight();
 
@@ -1173,23 +1027,6 @@ public class SpreadsheetController implements Serializable {
         spreadsheetGrid.layout();   // Force layout update
     }
 
-
-  /*  public void applyHeightToAllRows(double newHeight) {
-        for (int i = 1; i < spreadsheetGrid.getRowConstraints().size(); i++) {  // Skip row 0 if it's the header
-            applyHeightToRow(i, newHeight);  // Call the function that applies height to a specific row
-        }
-    }
-
-
-    public void applyWidthToAllColumns(double newWidth) {
-        for (int i = 1; i < spreadsheetGrid.getColumnConstraints().size(); i++) {  // Skip column 0 if it's the header
-            String columnLetter = String.valueOf((char) ('A' + (i - 1)));  // Convert index to column letter
-            applyWidthToColumn(columnLetter, newWidth);  // Call the function that applies width to a specific column
-        }
-    }
-*/
-
-
     private Node getNodeFromGridPane(GridPane gridPane, int col, int row) {
         for (Node node : gridPane.getChildren()) {
             if (GridPane.getColumnIndex(node) == col && GridPane.getRowIndex(node) == row) {
@@ -1198,8 +1035,6 @@ public class SpreadsheetController implements Serializable {
         }
         return null;
     }
-
-
 
     public void setMainController(appController appController) {
         this.appController = appController;
@@ -1233,16 +1068,9 @@ public class SpreadsheetController implements Serializable {
         }
     }
 
-
-
     // Convert JavaFX Color to AWT Color
     public static java.awt.Color toAwtColor(javafx.scene.paint.Color fxColor) {
         return new java.awt.Color((float) fxColor.getRed(), (float) fxColor.getGreen(), (float) fxColor.getBlue(), (float) fxColor.getOpacity());
-    }
-
-    // Convert AWT Color to JavaFX Color
-    public static javafx.scene.paint.Color toFxColor(java.awt.Color awtColor) {
-        return new javafx.scene.paint.Color(awtColor.getRed() / 255.0, awtColor.getGreen() / 255.0, awtColor.getBlue() / 255.0, awtColor.getAlpha() / 255.0);
     }
 
     // Converts javafx.scene.paint.Color to a valid hex code (without alpha channel)
@@ -1252,8 +1080,6 @@ public class SpreadsheetController implements Serializable {
                 (int)(color.getGreen() * 255),
                 (int)(color.getBlue() * 255));
     }
-
-
 
     // Apply the text color to a cell and update the data model
     public void applyCellTextColor(String cellId, javafx.scene.paint.Color textColor) {
@@ -1265,7 +1091,7 @@ public class SpreadsheetController implements Serializable {
             String backgroundColorHex = (currentBackground != null) ? currentBackground : "#FFFFFF"; // Default to white
 
             // Update both background and text colors together to avoid conflict
-            ((Label) cellNode).setStyle(
+            cellNode.setStyle(
                     "-fx-background-color: " + backgroundColorHex + "; -fx-text-fill: " + toRgbCode(textColor) + ";"
             );
         }
@@ -1284,7 +1110,7 @@ public class SpreadsheetController implements Serializable {
             String textColorHex = (currentTextColor != null) ? currentTextColor : "#000000"; // Default to black
 
             // Update both background and text colors together to avoid conflict
-            ((Label) cellNode).setStyle(
+            cellNode.setStyle(
                     "-fx-background-color: " + toRgbCode(backgroundColor) + "; -fx-text-fill: " + (textColorHex) + ";"
             );
         }
@@ -1293,14 +1119,13 @@ public class SpreadsheetController implements Serializable {
         spreadsheetManagerDTO.setCellBackgroundColor(cellId, toAwtColor(backgroundColor)); // Convert to java.awt.Color and store
     }
 
-
     // Reset the formatting of a cell
     public void resetCellFormatting(String cellId) {
         // Get the cell's node in the grid
         Node cellNode = getCellNodeById(cellId);
         if (cellNode instanceof Label) {
             ((Label) cellNode).setTextFill(javafx.scene.paint.Color.BLACK); // Reset text color
-            ((Label) cellNode).setStyle(""); // Clear any background style
+            cellNode.setStyle(""); // Clear any background style
 
             // Reset formatting in the internal data model
             spreadsheetManagerDTO.setCellTextColor(cellId, toAwtColor(javafx.scene.paint.Color.BLACK)); // Default text color
@@ -1319,7 +1144,6 @@ public class SpreadsheetController implements Serializable {
         }
         return null; // Return null if no matching cell is found
     }
-
 
     // Helper method to get all rows in the spreadsheet
     public List<Map<String, String>> getAllRowsInSpreadsheet() {
@@ -1464,18 +1288,5 @@ public class SpreadsheetController implements Serializable {
             return value;
         }
     }
-
-
-    public void disableEditing() {
-        // Disable grid editing but leave header editable for non-READERS
-        for (Node node : spreadsheetGrid.getChildren()) {
-            if (node instanceof TextField || node instanceof Button || node instanceof Label) {
-                node.setDisable(true);  // Disable text fields and buttons for grid editing
-            }
-        }
-
-
-    }
-
 }
 

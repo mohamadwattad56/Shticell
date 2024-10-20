@@ -20,49 +20,129 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class Spreadsheet implements Serializable,Cloneable {
-    private static final String CIRCULAR_DEPENDENCY_ERROR = "Circular dependency or missing reference detected.";
-    private static final String OUT_OF_BOUNDS_ERROR = "Cell %s is out of bounds.";;
+    private static final String OUT_OF_BOUNDS_ERROR = "Cell %s is out of bounds.";
 
     private Map<String, CellImpl> cells = new HashMap<>();
     private Map<String, Integer> cellLastModifiedVersion = new HashMap<>();
     public STLSheet sheet;
+    private Map<String, Set<String>> ranges = new HashMap<>();
     private int numRows;
     private int numCols;
-    private double rowHeight;
-    private double columnWidth;
-    private Map<String, Set<String>> ranges = new HashMap<>();
 
-
-    public void initializeGrid(STLSheet sheet) {
-        int rows = sheet.getSTLLayout().getRows();
-        int columns = sheet.getSTLLayout().getColumns();
-        int rowHeight = sheet.getSTLLayout().getSTLSize().getRowsHeightUnits();
-        int columnWidth = sheet.getSTLLayout().getSTLSize().getColumnWidthUnits();
-
-        clearSpreadsheet();
-
-
-        this.numRows = rows;
-        this.numCols = columns;
-        this.rowHeight = rowHeight;
-        this.columnWidth = columnWidth;
-    }
-    public int getNumRows() {
-        return numRows;
-    }
-    public int getNumCols() {
-        return numCols;
+    public void setCellValue(String cellId, Object value) {
+        cellLastModifiedVersion.put(cellId, 1);
+        setCellValue(cellId, value, -1);
     }
 
-    public double getRowHeight() {
-        return rowHeight;
+    public int setCellValue(String cellId, Object value, int currentVersion) {
+        if (!isWithinBounds(cellId)) {
+            throw new OutOfBoundsException(String.format(OUT_OF_BOUNDS_ERROR, cellId));
+        }
+
+        if (value == null || (value instanceof String && ((String) value).isEmpty())) {
+            value = "EMPTY";
+        }
+
+        // Fetch the existing cell if it exists, so we can retain its colors
+        CellImpl existingCell = cells.get(cellId);
+        String existingTextColor = (existingCell != null) ? existingCell.getTextColor() : "black";  // default to black
+        String existingBackgroundColor = (existingCell != null) ? existingCell.getBackgroundColor() : "white";  // default to white
+
+        // Create a new cell based on the value
+        CellImpl tempCell = createCellBasedOnValue(value);
+
+        // Retain the existing colors in the new cell
+        tempCell.setTextColor(existingTextColor);
+        tempCell.setBackgroundColor(existingBackgroundColor);
+
+        // Process the cell change (updating the spreadsheet data)
+
+
+        return processCellChange(cellId, tempCell, value, currentVersion);
     }
-    public double getColumnWidth() {
-        return columnWidth;
+
+    //getters
+    private int getLastModifiedVersion(String cellId) {
+        return cellLastModifiedVersion.getOrDefault(cellId, 0);
+    }
+
+    public CellImpl getCellById(String cellId) {
+        // Assuming you have a map called cells in your Spreadsheet class that stores cell data
+        if (cells.containsKey(cellId)) {
+            return cells.get(cellId);
+        } else {
+            throw new IllegalArgumentException("Cell with ID " + cellId + " does not exist.");
+        }
+    }
+
+    public Set<String> getAllRangeNames() {
+        return ranges.keySet();
+    }
+
+    public String getCellIdFromCoordinates(int row, int column) {
+        char columnLetter = (char) ('A' + (column - 1));
+        return String.valueOf(columnLetter) + row;
+    }
+
+    public Set<String> getCellIdsInRange(String fromCellId, String toCellId) {
+        Set<String> cellIds = new HashSet<>();
+
+        // Extract row and column information from the provided cell IDs
+        int fromRow = extractRow(fromCellId);
+        int fromCol = extractCol(fromCellId);  // Column is extracted as an integer (A=1, B=2, etc.)
+        int toRow = extractRow(toCellId);
+        int toCol = extractCol(toCellId);
+
+        // Ensure we process the range in the correct order (smallest to largest)
+        int startRow = Math.min(fromRow, toRow);
+        int endRow = Math.max(fromRow, toRow);
+        int startCol = Math.min(fromCol, toCol);
+        int endCol = Math.max(fromCol, toCol);
+
+        // Iterate over the rows and columns within the range
+        for (int row = startRow; row <= endRow; row++) {
+            for (int col = startCol; col <= endCol; col++) {
+                // Convert the column index back to a letter (A, B, C, etc.)
+                String columnName = Character.toString((char) ('A' + col - 1));
+                String cellId = generateCellId(row, columnName);  // Generate the cell ID using the existing method
+
+                // Ensure the cell is within bounds before adding it to the set
+                if (isWithinBounds(cellId)) {
+                    cellIds.add(cellId);
+                } else {
+                    throw new OutOfBoundsException(String.format("Cell %s is out of bounds.", cellId));
+                }
+            }
+        }
+
+        return cellIds;
+    }
+
+    public Set<CellImpl> getCellsInRange(String rangeName) {
+        Set<String> cellIds = ranges.get(rangeName);
+        if (cellIds == null) {
+            throw new RangeDoesNotExist("Range with name '" + rangeName + "' does not exist.");
+        }
+
+        Set<CellImpl> cellsInRange = new HashSet<>();
+        for (String cellId : cellIds) {
+            cellsInRange.add(getCellById(cellId));  // Fetch each CellImpl by its ID
+        }
+
+        return cellsInRange;
     }
 
     public Map<String, Set<String>> getRanges() {
         return ranges;
+    }
+
+    //Functions
+    public void initializeGrid(STLSheet sheet) {
+        int rows = sheet.getSTLLayout().getRows();
+        int columns = sheet.getSTLLayout().getColumns();
+        clearSpreadsheet();
+        this.numRows = rows;
+        this.numCols = columns;
     }
 
     @Override
@@ -175,106 +255,16 @@ public class Spreadsheet implements Serializable,Cloneable {
         }
     }
 
-    public String getCellIdFromCoordinates(int row, int column) {
-        char columnLetter = (char) ('A' + (column - 1));
-        return String.valueOf(columnLetter) + row;
-    }
-
-    public Set<String> getCellIdsInRange(String fromCellId, String toCellId) {
-        Set<String> cellIds = new HashSet<>();
-
-        // Extract row and column information from the provided cell IDs
-        int fromRow = extractRow(fromCellId);
-        int fromCol = extractCol(fromCellId);  // Column is extracted as an integer (A=1, B=2, etc.)
-        int toRow = extractRow(toCellId);
-        int toCol = extractCol(toCellId);
-
-        // Ensure we process the range in the correct order (smallest to largest)
-        int startRow = Math.min(fromRow, toRow);
-        int endRow = Math.max(fromRow, toRow);
-        int startCol = Math.min(fromCol, toCol);
-        int endCol = Math.max(fromCol, toCol);
-
-        // Iterate over the rows and columns within the range
-        for (int row = startRow; row <= endRow; row++) {
-            for (int col = startCol; col <= endCol; col++) {
-                // Convert the column index back to a letter (A, B, C, etc.)
-                String columnName = Character.toString((char) ('A' + col - 1));
-                String cellId = generateCellId(row, columnName);  // Generate the cell ID using the existing method
-
-                // Ensure the cell is within bounds before adding it to the set
-                if (isWithinBounds(cellId)) {
-                    cellIds.add(cellId);
-                } else {
-                    throw new OutOfBoundsException(String.format("Cell %s is out of bounds.", cellId));
-                }
-            }
-        }
-
-        return cellIds;
-    }
-
-    public Set<CellImpl> getCellsInRange(String rangeName) {
-        Set<String> cellIds = ranges.get(rangeName);
-        if (cellIds == null) {
-            throw new RangeDoesNotExist("Range with name '" + rangeName + "' does not exist.");
-        }
-
-        Set<CellImpl> cellsInRange = new HashSet<>();
-        for (String cellId : cellIds) {
-            cellsInRange.add(getCellById(cellId));  // Fetch each CellImpl by its ID
-        }
-
-        return cellsInRange;
-    }
-
     private String generateCellId(int row, String column) {
         // Assume column is already a letter (e.g., "A", "B", etc.)
         return column.toUpperCase() + row;
     }
 
-
-    // Cell Management Methods
     public void clearSpreadsheet() {
         cells.clear();
         ranges.clear();
         cellLastModifiedVersion.clear();
     }
-
-    public void setCellValue(String cellId, Object value) {
-        cellLastModifiedVersion.put(cellId, 1);
-        setCellValue(cellId, value, -1);
-    }
-
-    public int setCellValue(String cellId, Object value, int currentVersion) {
-        if (!isWithinBounds(cellId)) {
-            throw new OutOfBoundsException(String.format(OUT_OF_BOUNDS_ERROR, cellId));
-        }
-
-        if (value == null || (value instanceof String && ((String) value).isEmpty())) {
-           value = "EMPTY";
-        }
-
-        // Fetch the existing cell if it exists, so we can retain its colors
-        CellImpl existingCell = cells.get(cellId);
-        String existingTextColor = (existingCell != null) ? existingCell.getTextColor() : "black";  // default to black
-        String existingBackgroundColor = (existingCell != null) ? existingCell.getBackgroundColor() : "white";  // default to white
-
-        // Create a new cell based on the value
-        CellImpl tempCell = createCellBasedOnValue(value);
-
-        // Retain the existing colors in the new cell
-        tempCell.setTextColor(existingTextColor);
-        tempCell.setBackgroundColor(existingBackgroundColor);
-
-        // Process the cell change (updating the spreadsheet data)
-        int affectedCellsCount = processCellChange(cellId, tempCell, value, currentVersion);
-
-
-        return affectedCellsCount;
-    }
-
-
 
     private int processCellChange(String cellId, CellImpl tempCell, Object value, int currentVersion) {
         int affectedCellsCount = 0;
@@ -309,24 +299,11 @@ public class Spreadsheet implements Serializable,Cloneable {
         return affectedCellsCount;
     }
 
-
     private boolean validChange(String cellId, CellImpl cell, Object newValue) {
-        Object originalSourceValue = cell != null ? cell.getSourceValue() : null;
-        Object originalEffectiveValue = cell != null ? cell.getEffectiveValue() : null;
-
         try {
             CellImpl tempCell = createCellBasedOnValue(newValue);
             tempCell.setSourceValue(newValue);
-
-            if (cell != null) {
-          /*      cell.setSourceValue(newValue);
-            } else {*/
-                cell = tempCell;
-            }
-
             detectCircularDependency(cellId, new HashSet<>());
-           // cell.evaluate();
-
             for (Map.Entry<String, CellImpl> entry : cells.entrySet()) {
                 CellImpl dependentCell = entry.getValue();
                 if (dependentCell instanceof FunctionCell && ((FunctionCell) dependentCell).dependsOn(cellId)) {
@@ -340,12 +317,7 @@ public class Spreadsheet implements Serializable,Cloneable {
             return true;
         } catch (CircularDependencyException e) {
             throw new CircularDependencyException(e.getMessage());
-        } /*finally {
-            if (cell != null) {
-                cell.setSourceValue(originalSourceValue);
-                cell.setEffectiveValue(originalEffectiveValue);
-            }
-        }*/
+        }
     }
 
     CellImpl createCellBasedOnValue(Object value) {
@@ -363,7 +335,6 @@ public class Spreadsheet implements Serializable,Cloneable {
             throw new IllegalArgumentException("Unsupported value type.");
         }
     }
-
 
     private void revertCellChange(String cellId, int currentVersion) {
         if (currentVersion == -1) {
@@ -406,7 +377,6 @@ public class Spreadsheet implements Serializable,Cloneable {
         visitedCells.remove(cellId);
     }
 
-
     boolean isWithinBounds(String cellId) {
         int row = extractRow(cellId);
         int col = extractCol(cellId);
@@ -423,7 +393,6 @@ public class Spreadsheet implements Serializable,Cloneable {
         return colPart.chars().reduce(0, (acc, ch) -> acc * 26 + (ch - 'A' + 1));
     }
 
-    // Utility Methods
     public void recalculate() {
         Set<String> evaluatedCells = new HashSet<>();
         cells.values().forEach(cell -> {
@@ -437,18 +406,11 @@ public class Spreadsheet implements Serializable,Cloneable {
     public CellImpl resolveReference(String cellReference) {
         if(extractCol(cellReference)<numCols && extractRow(cellReference)<numRows){
             Optional<CellImpl> cell = Optional.ofNullable(cells.get(cellReference.toUpperCase()));
-
-            if (cell.isPresent()) {
-                return cell.get();
-            } else {
-                // If the referenced cell is empty, return a special cell indicating it's empty
-                return new StringCell("EMPTY");
-            }
+            return cell.orElseGet(() -> new StringCell("EMPTY"));
         }else{
             return new StringCell("!UNKNOWN!");
         }
     }
-
 
     public boolean isFunction(String value) {
         return value.startsWith("{") && value.endsWith("}");
@@ -484,7 +446,6 @@ public class Spreadsheet implements Serializable,Cloneable {
             default -> throw new IllegalArgumentException("Unknown function: " + functionName);
         };
     }
-
 
     public Cell[] parseArguments(String value1) {
         String value = value1.trim();
@@ -550,9 +511,6 @@ public class Spreadsheet implements Serializable,Cloneable {
         return arg.toUpperCase().trim().matches("[A-Z]{1,3}[0-9]+");
     }
 
-
-
-    // Data Transfer Methods
     public SpreadsheetDTO toDTO() {
         // Proceed with converting cells to DTOs
         List<CellDTO> cellDTOs = cells.entrySet().stream()
@@ -595,8 +553,6 @@ public class Spreadsheet implements Serializable,Cloneable {
         );
     }
 
-
-
     public CellDTO getCellDTO(String cellId) {
         CellImpl cell = cells.get(cellId);
         if (isWithinBounds(cellId)) {
@@ -632,9 +588,6 @@ public class Spreadsheet implements Serializable,Cloneable {
             throw new OutOfBoundsException(String.format(OUT_OF_BOUNDS_ERROR, cellId));
         }
     }
-
-
-
 
     public List<String> findDependencies(String cellId) {
         // Create a set to avoid processing the same cell multiple times
@@ -689,17 +642,14 @@ public class Spreadsheet implements Serializable,Cloneable {
         return dependencies;
     }
 
-    // Helper to detect if a function is range-based (e.g., SUM, AVERAGE)
     private boolean isRangeBasedFunction(String functionDefinition) {
         return functionDefinition.startsWith("{SUM") || functionDefinition.startsWith("{AVERAGE");
     }
 
-    // Extract range name from function definition (e.g., {SUM, grades} -> "grades")
     private String extractRangeFromFunction(String functionDefinition) {
         return functionDefinition.substring(functionDefinition.indexOf(',') + 1, functionDefinition.length() - 1).trim();
     }
 
-    // Get cells in range by range name (e.g., "grades" -> {C3, C4, C5})
     private Set<String> getCellsInRangeByName(String rangeName) {
         return ranges.get(rangeName); // Assumes the range is already stored in a map
     }
@@ -714,11 +664,10 @@ public class Spreadsheet implements Serializable,Cloneable {
         for (String nestedArg : args) {
             nestedArg = nestedArg.trim();
             if (isCellReference(nestedArg)) {
-                String referencedNestedCellId = nestedArg;
-                if (!dependencies.contains(referencedNestedCellId)) {
-                    dependencies.add(referencedNestedCellId);
+                if (!dependencies.contains(nestedArg)) {
+                    dependencies.add(nestedArg);
                     // Recursively find dependencies for the referenced cell in the nested function
-                    dependencies.addAll(findDependenciesHelper(referencedNestedCellId, visited));
+                    dependencies.addAll(findDependenciesHelper(nestedArg, visited));
                 }
             } else if (nestedArg.startsWith("{")) {
                 // If it's another nested function, process it recursively
@@ -729,18 +678,12 @@ public class Spreadsheet implements Serializable,Cloneable {
         return dependencies;
     }
 
-
     public List<String> findDependents(String cellId) {
-        List<String> dependents = new ArrayList<>();
-
-        // Find direct cell dependents
-        dependents.addAll(cells.entrySet().stream()
+        List<String> dependents = cells.entrySet().stream()
                 .filter(entry -> entry.getValue() instanceof FunctionCell)
                 .filter(entry -> entry.getValue().dependsOn(cellId))
-                .map(Map.Entry::getKey)
-                .collect(Collectors.toList()));
+                .map(Map.Entry::getKey).collect(Collectors.toList());
 
-        // Check for cells that depend on ranges that include cellId
         for (Map.Entry<String, CellImpl> entry : cells.entrySet()) {
             if (entry.getValue() instanceof FunctionCell) {
                 String functionDefinition = entry.getValue().getSourceValue().toString();
@@ -759,15 +702,6 @@ public class Spreadsheet implements Serializable,Cloneable {
         return dependents;
     }
 
-
-
-
-    private int getLastModifiedVersion(String cellId) {
-        return cellLastModifiedVersion.getOrDefault(cellId, 0);
-    }
-
-
-
     public Spreadsheet deepCopy() {
         try {
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
@@ -780,77 +714,5 @@ public class Spreadsheet implements Serializable,Cloneable {
         } catch (IOException | ClassNotFoundException e) {
             throw new RuntimeException("Error during deep copy", e);
         }
-    }
-
-    // Existing method to add ranges
-    public void addRange(String rangeName, String fromCellId, String toCellId) {
-        Set<String> cellIdsInRange = getCellIdsInRange(fromCellId, toCellId);
-        ranges.put(rangeName, cellIdsInRange);
-    }
-
-    public CellImpl getCellById(String cellId) {
-        // Assuming you have a map called cells in your Spreadsheet class that stores cell data
-        if (cells.containsKey(cellId)) {
-            return cells.get(cellId);
-        } else {
-            throw new IllegalArgumentException("Cell with ID " + cellId + " does not exist.");
-        }
-    }
-
-    // Remove a range
-    public void removeRange(String rangeName) {
-        ranges.remove(rangeName);
-    }
-
-    // Check if a range exists
-    public boolean rangeExists(String rangeName) {
-        return ranges.containsKey(rangeName);
-    }
-
-    // Get all range names
-    public Set<String> getAllRangeNames() {
-        return ranges.keySet();
-    }
-
-    public Set<String> getAllRangeCellsId(String range) {
-        return ranges.get(range);
-    }
-
-
-    public void setCellTextColor(String cellId, Color color) {
-        CellImpl cell = cells.get(cellId);
-        String colorCode = toRgbCode(color); // Convert Color object to RGB String
-        cell.setTextColor(colorCode);
-    }
-
-    public void setCellBackgroundColor(String cellId, Color color) {
-        CellImpl cell = cells.get(cellId);
-        String colorCode = toRgbCode(color); // Convert Color object to RGB String
-        cell.setBackgroundColor(colorCode);
-    }
-
-    // Helper method to convert Color to RGB code (e.g., #FF0000 for red)
-    private String toRgbCode(Color color) {
-        return String.format("#%02X%02X%02X",
-                (int) (color.getRed() * 255),
-                (int) (color.getGreen() * 255),
-                (int) (color.getBlue() * 255));
-    }
-
-
-
-    public String getCellTextColor(String cellId) {
-        CellImpl cell = cells.get(cellId);
-        return cell != null && cell.getTextColor() != null ? cell.getTextColor() : "#000000"; // Default to black
-    }
-
-    public String getCellBackgroundColor(String cellId) {
-        CellImpl cell = cells.get(cellId);
-        return cell != null && cell.getBackgroundColor() != null ? cell.getBackgroundColor() : "#FFFFFF"; // Default to white
-    }
-
-
-    public void dynamicEval() {
-        recalculate();;
     }
 }

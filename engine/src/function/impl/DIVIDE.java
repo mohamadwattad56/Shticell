@@ -2,7 +2,7 @@ package function.impl;
 
 import cell.api.Cell;
 
-public class DIVIDE extends AbstractFunctioUtils {
+public class DIVIDE extends AbstractFunctionsUtils {
 
 
     @Override

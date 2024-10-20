@@ -3,7 +3,7 @@ package function.impl;
 import cell.api.Cell;
 
 
-public class BIGGER extends AbstractFunctioUtils{
+public class BIGGER extends AbstractFunctionsUtils {
 
     @Override
     public Object apply(Cell... args) {

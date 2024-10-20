@@ -1,5 +1,4 @@
 package gridPageController.mainController;
-
 import dashboard.mainDashboardController.MainDashboardController;
 import gridPageController.CommandRangesController.CommandAndRangesController;
 import dto.CellDTO;
@@ -18,7 +17,6 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.util.Duration;
-
 import java.io.IOException;
 
 public class appController {
@@ -64,7 +62,6 @@ public class appController {
         spreadsheetController.setHeadController(headController);
     }
 
-
     public void setMainDashboardController(MainDashboardController mainDashboardController) {
         this.mainDashboardController = mainDashboardController;
     }
@@ -95,7 +92,6 @@ public class appController {
         this.spreadsheetController = spreadsheetController;
         spreadsheetController.setMainController(this);
     }
-
 
     public SpreadsheetController getSpreadsheetController() {
         return spreadsheetController;
@@ -167,12 +163,10 @@ public class appController {
                         cellLabel.getStyleClass().add(cellClass);  // Add the new style class for the cell
 
                         // Apply the relevant text color based on the skin
-                        if (cellClass.equals("light-cell")) {
-                            cellLabel.setStyle("-fx-text-fill: black;");
-                        } else if (cellClass.equals("dark-cell")) {
-                            cellLabel.setStyle("-fx-text-fill: white;");
-                        } else if (cellClass.equals("colorful-cell")) {
-                            cellLabel.setStyle("-fx-text-fill: black;");
+                        switch (cellClass) {
+                            case "light-cell" -> cellLabel.setStyle("-fx-text-fill: black;");
+                            case "dark-cell" -> cellLabel.setStyle("-fx-text-fill: white;");
+                            case "colorful-cell" -> cellLabel.setStyle("-fx-text-fill: black;");
                         }
                     }
                 }
@@ -180,17 +174,13 @@ public class appController {
         }
     }
 
-    // Helper method to check if the color is black (either as name or hex)
     private boolean isBlack(String color) {
         return color.equalsIgnoreCase("black") || color.equalsIgnoreCase("#000000");
     }
 
-    // Helper method to check if the color is white (either as name or hex)
     private boolean isWhite(String color) {
         return color.equalsIgnoreCase("white") || color.equalsIgnoreCase("#FFFFFF");
     }
-
-
 
      private void applyButtonFadeIn(Button button) {
          FadeTransition fadeIn = new FadeTransition(Duration.millis(500), button);
@@ -199,15 +189,13 @@ public class appController {
          fadeIn.play();
      }
 
-
     private void applyButtonStyles(String buttonClass) {
         Node leftSection = mainContainer.getLeft();
         Node headerSection = mainContainer.getTop();
             // For other button classes, apply as before
             if (leftSection instanceof VBox) {
                 for (Node node : ((VBox) leftSection).getChildren()) {
-                    if (node instanceof Button) {
-                        Button button = (Button) node;
+                    if (node instanceof Button button) {
                         button.getStyleClass().clear();
                         button.getStyleClass().add(buttonClass);
                         button.getStyleClass().add("button"); // Ensure basic button styling is applied
@@ -237,9 +225,6 @@ public class appController {
 
     }
 
-
-
-
     private void applyLabelStyles(String labelClass) {
         Node headerSection = mainContainer.getTop();
         for (Node node : ((VBox) headerSection).getChildren()) {
@@ -257,46 +242,13 @@ public class appController {
         }
     }
 
-
-
     public String getCellClassForCurrentSkin() {
-        switch (currentSkin) {
-            case "Light":
-                return "light-cell";
-            case "Dark":
-                return "dark-cell";
-            case "Colorful":
-                return "colorful-cell";
-            default:
-                return "light-cell";  // Default to light cell if no skin is selected
-        }
-    }
-
-
-    public String getSkinBackgroundColor() {
-        switch (currentSkin) {
-            case "Light":
-                return "#ffffff";  // White background for light skin
-            case "Dark":
-                return "#2c3e50";  // Dark background for dark skin
-            case "Colorful":
-                return "#f39c12";  // Orange background for colorful skin
-            default:
-                return "#ffffff";  // Default to white if no skin is selected
-        }
-    }
-
-    public String getSkinTextColor() {
-        switch (currentSkin) {
-            case "Light":
-                return "#000000";  // Black text for light skin
-            case "Dark":
-                return "#ffffff";  // White text for dark skin
-            case "Colorful":
-                return "#ffffff";  // White text for colorful skin
-            default:
-                return "#000000";  // Default to black if no skin is selected
-        }
+        return switch (currentSkin) {
+            case "Light" -> "light-cell";
+            case "Dark" -> "dark-cell";
+            case "Colorful" -> "colorful-cell";
+            default -> "light-cell";  // Default to light cell if no skin is selected
+        };
     }
 
     public ScrollPane getScrollPane() {

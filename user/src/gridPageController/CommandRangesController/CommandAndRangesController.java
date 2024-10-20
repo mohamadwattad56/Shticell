@@ -15,7 +15,6 @@ import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import javafx.util.Duration;
-
 import java.util.*;
 
 public class CommandAndRangesController {
@@ -32,6 +31,23 @@ public class CommandAndRangesController {
 
     private gridPageController.mainController.appController appController;
 
+    private static class FilterCriteria {
+        private final String column;
+        private final List<String> values;
+
+        public FilterCriteria(String column, List<String> values) {
+            this.column = column;
+            this.values = values;
+        }
+
+        public String getColumn() {
+            return column;
+        }
+
+        public List<String> getValues() {
+            return values;
+        }
+    }
 
     @FXML
     public void initialize() {
@@ -39,6 +55,281 @@ public class CommandAndRangesController {
         fillRangesMenu();
         commandsMenu = new ContextMenu();
         fillCommandsMenu();
+    }
+
+    @FXML
+    public void resetSelectedCellDesign() {
+        // Create a new stage for the cell selection dialog
+        Stage cellSelectionStage = new Stage();
+        cellSelectionStage.setTitle("Reset Cell Design");
+
+        // Layout and padding for the stage
+        VBox layout = new VBox(10);
+        layout.setPadding(new Insets(20));
+
+        // Instruction label
+        Label instructionLabel = new Label("Select a cell:");
+        ComboBox<String> cellComboBox = new ComboBox<>();
+        cellComboBox.setPromptText("Select cell");
+
+        // Populate ComboBox with cell IDs
+        for (int row = 1; row <= appController.getSpreadsheetController().getSpreadsheet().getNumOfRows(); row++) {
+            for (int col = 1; col <= appController.getSpreadsheetController().getSpreadsheet().getNumOfColumns(); col++) {
+                String cellId = this.appController.getSpreadsheetController().getCellIdFromCoordinates(row, col);
+                cellComboBox.getItems().add(cellId);
+            }
+        }
+
+        // Reset Button
+        Button resetButton = new Button("Reset Design");
+        resetButton.setDisable(true); // Disable the button until a cell is selected
+
+        // Enable the reset button when a cell is selected
+        cellComboBox.setOnAction(event -> resetButton.setDisable(cellComboBox.getValue() == null));
+
+        // Reset button action
+        resetButton.setOnAction(event -> {
+            String selectedCellId = cellComboBox.getValue();
+
+            // Confirmation dialog
+            Alert confirmationDialog = new Alert(Alert.AlertType.CONFIRMATION);
+            confirmationDialog.setTitle("Confirm Reset");
+            confirmationDialog.setHeaderText("Are you sure you want to reset the design for cell: " + selectedCellId + "?");
+
+            // Wait for user confirmation
+            Optional<ButtonType> result = confirmationDialog.showAndWait();
+            if (result.isPresent() && result.get() == ButtonType.OK) {
+                // Reset the cell design
+                appController.getSpreadsheetController().resetCellFormatting(selectedCellId);
+                cellSelectionStage.close(); // Close the selection dialog
+            } else {
+                // If Cancel or Close was pressed, do nothing
+                confirmationDialog.close();
+            }
+        });
+
+        // Cancel button to close the dialog
+        Button cancelButton = new Button("Cancel");
+        cancelButton.setOnAction(event -> cellSelectionStage.close());
+
+        // Add all elements to the layout
+        HBox buttonBox = new HBox(10, cancelButton, resetButton);
+        layout.getChildren().addAll(instructionLabel, cellComboBox, buttonBox);
+
+        // Set the scene and show the stage
+        Scene scene = new Scene(layout, 300, 200);
+        cellSelectionStage.setScene(scene);
+        cellSelectionStage.show();
+    }
+
+    @FXML
+    public void showDeleteRangePopup() {
+        Stage popupStage = new Stage();
+        popupStage.setTitle("Delete Range");
+
+        VBox popupLayout = new VBox(10);
+        popupLayout.setPadding(new Insets(20));
+
+        ComboBox<String> rangeComboBox = new ComboBox<>();
+        rangeComboBox.setPromptText("Select range");
+        rangeComboBox.getItems().addAll(appController.getSpreadsheetController().getSpreadsheet().getAllRangeNames());
+
+        Button deleteButton = new Button("Delete");
+        deleteButton.setDisable(true);
+
+        rangeComboBox.setOnAction(event -> deleteButton.setDisable(rangeComboBox.getValue() == null));
+
+        deleteButton.setOnAction(event -> {
+            String selectedRange = rangeComboBox.getValue();
+
+            Alert confirmationDialog = new Alert(Alert.AlertType.CONFIRMATION);
+            confirmationDialog.setTitle("Confirm Delete");
+            confirmationDialog.setHeaderText("Are you sure you want to delete the range: " + selectedRange + "?");
+
+            Optional<ButtonType> result = confirmationDialog.showAndWait();
+            if (result.isPresent() && result.get() == ButtonType.OK) {
+                boolean isDeleted = appController.getSpreadsheetController().getSpreadsheet().deleteRange(selectedRange);
+                if (isDeleted) {
+                    popupStage.close(); // Close the delete range popup
+                } else {
+                    appController.showError("Error", "Could not delete the range.");
+                }
+            } else {
+                confirmationDialog.close();
+            }
+        });
+
+        Button cancelButton = new Button("Cancel");
+        cancelButton.setOnAction(event -> popupStage.close());
+
+        popupLayout.getChildren().addAll(new Label("Select range to delete:"), rangeComboBox, new HBox(10, cancelButton, deleteButton));
+        Scene popupScene = new Scene(popupLayout, 300, 200);
+        popupStage.setScene(popupScene);
+        popupStage.showAndWait();
+    }
+
+    @FXML
+    public void showDisplayRangePopup() {
+        Stage popupStage = new Stage();
+        popupStage.setTitle("Display Range");
+
+        VBox popupLayout = new VBox(10);
+        popupLayout.setPadding(new Insets(20));
+
+        ComboBox<String> rangeComboBox = new ComboBox<>();
+        rangeComboBox.setPromptText("Select range");
+        rangeComboBox.getItems().addAll(appController.getSpreadsheetController().getSpreadsheet().getAllRangeNames());
+
+        Button displayButton = new Button("Display");
+        displayButton.setDisable(true);
+
+        rangeComboBox.setOnAction(event -> displayButton.setDisable(rangeComboBox.getValue() == null));
+
+        displayButton.setOnAction(event -> {
+            String selectedRange = rangeComboBox.getValue();
+            Set<String> cellIdsInRange = appController.getSpreadsheetController().getSpreadsheet().getRangeCells(selectedRange);
+
+            if (cellIdsInRange != null) {
+                appController.getSpreadsheetController().highlightCellsInRange(cellIdsInRange);
+                popupStage.close();
+            } else {
+                appController.showError("", "No range found for the selected range: " + selectedRange);
+            }
+        });
+
+        Button cancelButton = new Button("Cancel");
+        cancelButton.setOnAction(event -> popupStage.close());
+
+        popupLayout.getChildren().addAll(new Label("Select range to display:"), rangeComboBox, new HBox(10, cancelButton, displayButton));
+        Scene popupScene = new Scene(popupLayout, 300, 200);
+        popupStage.setScene(popupScene);
+        popupStage.showAndWait();
+    }
+
+    @FXML
+    public void showCommandsMenu() {
+        // Get the button's screen coordinates
+        double x = commandsTextArea.localToScreen(commandsTextArea.getBoundsInLocal()).getMinX();
+        double y = (commandsTextArea.localToScreen(commandsTextArea.getBoundsInLocal()).getMaxY()) -30;
+
+        // Show the ContextMenu near the button
+        commandsMenu.show(commandsTextArea, x, y);
+    }
+
+    @FXML
+    private void showRangesMenu() {
+        rangesMenu.show(rangesTextArea, Side.BOTTOM, 0, 0);
+    }
+
+    @FXML
+    public void showAlignmentMenu() {
+        int columnsNum = this.appController.getSpreadsheetController().getSpreadsheet().getNumOfColumns();
+        // Create a new Stage for the alignment popup
+        Stage popupStage = new Stage();
+        popupStage.setTitle("Align Text");
+
+        // Main layout - VBox with padding and spacing
+        VBox popupLayout = new VBox(20);
+        popupLayout.setPadding(new Insets(20));
+        popupLayout.setStyle("-fx-background-color: #ffffff; -fx-border-color: #dddddd; -fx-border-radius: 10px; -fx-border-width: 2; -fx-effect: dropshadow(gaussian, #888, 10, 0, 0, 0);");
+
+        // Instruction Label
+        Label instructionLabel = new Label("Select a column for alignment:");
+        instructionLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #333333;");
+
+        // ComboBox for column selection
+        ComboBox<String> columnComboBox = new ComboBox<>();
+        columnComboBox.setPromptText("Choose Column");
+        for(int i = 0; i < columnsNum; i++) {
+            String columnLetter = String.valueOf((char) ('A' + (i)));
+            columnComboBox.getItems().add(columnLetter);
+        }
+       // columnComboBox.getItems().addAll("A", "B", "C");  // Add column options dynamically
+
+        // Alignment options (Checkboxes)
+        CheckBox leftCheckBox = new CheckBox("Left");
+        CheckBox centerCheckBox = new CheckBox("Center");
+        CheckBox rightCheckBox = new CheckBox("Right");
+
+        // Disable checkboxes by default until a column is selected
+        leftCheckBox.setDisable(true);
+        centerCheckBox.setDisable(true);
+        rightCheckBox.setDisable(true);
+
+        // Enable checkboxes when a column is selected
+        columnComboBox.setOnAction(event -> {
+            if (columnComboBox.getValue() != null) {
+                leftCheckBox.setDisable(false);
+                centerCheckBox.setDisable(false);
+                rightCheckBox.setDisable(false);
+            }
+        });
+
+        // Ensure only one checkbox is selected at a time
+        leftCheckBox.setOnAction(event -> {
+            if (leftCheckBox.isSelected()) {
+                centerCheckBox.setSelected(false);
+                rightCheckBox.setSelected(false);
+            }
+        });
+        centerCheckBox.setOnAction(event -> {
+            if (centerCheckBox.isSelected()) {
+                leftCheckBox.setSelected(false);
+                rightCheckBox.setSelected(false);
+            }
+        });
+        rightCheckBox.setOnAction(event -> {
+            if (rightCheckBox.isSelected()) {
+                leftCheckBox.setSelected(false);
+                centerCheckBox.setSelected(false);
+            }
+        });
+
+        // Cancel and OK buttons
+        Button cancelButton = new Button("Cancel");
+        Button okButton = new Button("OK");
+
+        // Button styles
+        cancelButton.setStyle("-fx-background-color: #f44336; -fx-text-fill: white; -fx-font-weight: bold;");
+        okButton.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-font-weight: bold;");
+        okButton.setDisable(true); // Initially disabled
+
+        // Enable OK button only when an alignment option is selected
+        leftCheckBox.setOnAction(e -> okButton.setDisable(!leftCheckBox.isSelected()));
+        centerCheckBox.setOnAction(e -> okButton.setDisable(!centerCheckBox.isSelected()));
+        rightCheckBox.setOnAction(e -> okButton.setDisable(!rightCheckBox.isSelected()));
+
+        cancelButton.setOnAction(event -> popupStage.close());
+
+
+        okButton.setOnAction(event -> {
+            // Determine which alignment was selected
+            Pos alignment;
+            if (leftCheckBox.isSelected()) {
+                alignment = Pos.CENTER_LEFT;
+            } else if (centerCheckBox.isSelected()) {
+                alignment = Pos.CENTER;
+            } else {
+                alignment = Pos.CENTER_RIGHT;
+            }
+
+            // Apply alignment to the column in SpreadsheetController
+            appController.getSpreadsheetController().applyColumnAlignment(columnComboBox.getValue(), alignment);
+
+            popupStage.close();
+        });
+
+        // HBox for buttons
+        HBox buttonBox = new HBox(10, cancelButton, okButton);
+        buttonBox.setAlignment(Pos.CENTER_RIGHT);
+
+        // Add components to the layout
+        popupLayout.getChildren().addAll(instructionLabel, columnComboBox, leftCheckBox, centerCheckBox, rightCheckBox, buttonBox);
+
+        // Set the layout on the scene and show the popup
+        Scene popupScene = new Scene(popupLayout, 350, 250);
+        popupStage.setScene(popupScene);
+        popupStage.showAndWait();
     }
 
     private void fillRangesMenu() {
@@ -73,7 +364,6 @@ public class CommandAndRangesController {
         // Add items to the context menu
         commandsMenu.getItems().addAll(setColumnOrRowsWidth, alignText, setCellDesign, resetCellDesign, sortOption,filterOption,barGraphOption);
     }
-
 
     private void showGraphPopup() {
         Stage graphPopupStage = new Stage();
@@ -153,7 +443,6 @@ public class CommandAndRangesController {
         graphPopupStage.setScene(scene);
         graphPopupStage.show();
     }
-
 
     public void createGraph(String fromXCell, String toXCell, String fromYCell, String toYCell, String graphType) {
         List<Double> xData = extractDataFromRange(fromXCell, toXCell);
@@ -394,71 +683,6 @@ public class CommandAndRangesController {
         colorPickerStage.show();
     }
 
-    @FXML
-    public void resetSelectedCellDesign() {
-        // Create a new stage for the cell selection dialog
-        Stage cellSelectionStage = new Stage();
-        cellSelectionStage.setTitle("Reset Cell Design");
-
-        // Layout and padding for the stage
-        VBox layout = new VBox(10);
-        layout.setPadding(new Insets(20));
-
-        // Instruction label
-        Label instructionLabel = new Label("Select a cell:");
-        ComboBox<String> cellComboBox = new ComboBox<>();
-        cellComboBox.setPromptText("Select cell");
-
-        // Populate ComboBox with cell IDs
-        for (int row = 1; row <= appController.getSpreadsheetController().getSpreadsheet().getNumOfRows(); row++) {
-            for (int col = 1; col <= appController.getSpreadsheetController().getSpreadsheet().getNumOfColumns(); col++) {
-                String cellId = this.appController.getSpreadsheetController().getCellIdFromCoordinates(row, col);
-                cellComboBox.getItems().add(cellId);
-            }
-        }
-
-        // Reset Button
-        Button resetButton = new Button("Reset Design");
-        resetButton.setDisable(true); // Disable the button until a cell is selected
-
-        // Enable the reset button when a cell is selected
-        cellComboBox.setOnAction(event -> resetButton.setDisable(cellComboBox.getValue() == null));
-
-        // Reset button action
-        resetButton.setOnAction(event -> {
-            String selectedCellId = cellComboBox.getValue();
-
-            // Confirmation dialog
-            Alert confirmationDialog = new Alert(Alert.AlertType.CONFIRMATION);
-            confirmationDialog.setTitle("Confirm Reset");
-            confirmationDialog.setHeaderText("Are you sure you want to reset the design for cell: " + selectedCellId + "?");
-
-            // Wait for user confirmation
-            Optional<ButtonType> result = confirmationDialog.showAndWait();
-            if (result.isPresent() && result.get() == ButtonType.OK) {
-                // Reset the cell design
-                appController.getSpreadsheetController().resetCellFormatting(selectedCellId);
-                cellSelectionStage.close(); // Close the selection dialog
-            } else {
-                // If Cancel or Close was pressed, do nothing
-                confirmationDialog.close();
-            }
-        });
-
-        // Cancel button to close the dialog
-        Button cancelButton = new Button("Cancel");
-        cancelButton.setOnAction(event -> cellSelectionStage.close());
-
-        // Add all elements to the layout
-        HBox buttonBox = new HBox(10, cancelButton, resetButton);
-        layout.getChildren().addAll(instructionLabel, cellComboBox, buttonBox);
-
-        // Set the scene and show the stage
-        Scene scene = new Scene(layout, 300, 200);
-        cellSelectionStage.setScene(scene);
-        cellSelectionStage.show();
-    }
-
     private void showSortPopup() {
         Stage sortPopupStage = new Stage();
         sortPopupStage.setTitle("Sort Table");
@@ -543,11 +767,11 @@ public class CommandAndRangesController {
         sortPopupStage.setScene(scene);
         sortPopupStage.show();
     }
-    // Populate the column dropdown based on the selected range (from..to)
+
     private void populateColumnDropdown(ComboBox<String> columnDropdown, String fromCell, String toCell, List<String> alreadySelectedColumns) {
         if (fromCell != null && toCell != null) {
             Set<String> columns = extractColumnsInRange(fromCell, toCell);
-            columns.removeAll(alreadySelectedColumns); // Remove already selected columns
+            alreadySelectedColumns.forEach(columns::remove); // Remove already selected columns
             columnDropdown.getItems().clear(); // Clear previous items
             columnDropdown.getItems().addAll(columns); // Add valid columns
         }
@@ -822,24 +1046,6 @@ public class CommandAndRangesController {
         filterPopupStage.show();
     }
 
-    private static class FilterCriteria {
-        private final String column;
-        private final List<String> values;
-
-        public FilterCriteria(String column, List<String> values) {
-            this.column = column;
-            this.values = values;
-        }
-
-        public String getColumn() {
-            return column;
-        }
-
-        public List<String> getValues() {
-            return values;
-        }
-    }
-
     private List<FilterCriteria> gatherFilterCriteria(VBox filterColumnsBox) {
         List<FilterCriteria> filterCriteriaList = new ArrayList<>();
 
@@ -910,20 +1116,6 @@ public class CommandAndRangesController {
             }
         }
         return true;
-    }
-
-    private Map<String, String> extractRowData(int row, int fromColumn, int toColumn) {
-        Map<String, String> rowData = new HashMap<>();
-
-        // Loop through each column in the range and extract the data
-        for (int col = fromColumn; col <= toColumn; col++) {
-            String columnLetter = String.valueOf((char) ('A' + col - 1));
-            String cellId = columnLetter + row;
-            String cellValue = appController.getSpreadsheetController().getSpreadsheet().getCellDTO(cellId).getEffectiveValue().toString();
-            rowData.put(columnLetter, cellValue);
-        }
-
-        return rowData;
     }
 
     private void showFilteredResults(List<Map<String, String>> filteredData) {
@@ -1126,110 +1318,10 @@ public class CommandAndRangesController {
         popupStage.showAndWait();
     }
 
-
     private void validateRangeSelections(ComboBox<String> fromColumn, ComboBox<String> toColumn, Button addButton) {
         if (fromColumn.getValue() != null && toColumn.getValue() != null) {
             addButton.setDisable(false);
         }
-    }
-
-    @FXML
-    public void showDeleteRangePopup() {
-        Stage popupStage = new Stage();
-        popupStage.setTitle("Delete Range");
-
-        VBox popupLayout = new VBox(10);
-        popupLayout.setPadding(new Insets(20));
-
-        ComboBox<String> rangeComboBox = new ComboBox<>();
-        rangeComboBox.setPromptText("Select range");
-        rangeComboBox.getItems().addAll(appController.getSpreadsheetController().getSpreadsheet().getAllRangeNames());
-
-        Button deleteButton = new Button("Delete");
-        deleteButton.setDisable(true);
-
-        rangeComboBox.setOnAction(event -> deleteButton.setDisable(rangeComboBox.getValue() == null));
-
-        deleteButton.setOnAction(event -> {
-            String selectedRange = rangeComboBox.getValue();
-
-            Alert confirmationDialog = new Alert(Alert.AlertType.CONFIRMATION);
-            confirmationDialog.setTitle("Confirm Delete");
-            confirmationDialog.setHeaderText("Are you sure you want to delete the range: " + selectedRange + "?");
-
-            Optional<ButtonType> result = confirmationDialog.showAndWait();
-            if (result.isPresent() && result.get() == ButtonType.OK) {
-                boolean isDeleted = appController.getSpreadsheetController().getSpreadsheet().deleteRange(selectedRange);
-                if (isDeleted) {
-                    popupStage.close(); // Close the delete range popup
-                } else {
-                    appController.showError("Error", "Could not delete the range.");
-                }
-            } else {
-                confirmationDialog.close();
-            }
-        });
-
-        Button cancelButton = new Button("Cancel");
-        cancelButton.setOnAction(event -> popupStage.close());
-
-        popupLayout.getChildren().addAll(new Label("Select range to delete:"), rangeComboBox, new HBox(10, cancelButton, deleteButton));
-        Scene popupScene = new Scene(popupLayout, 300, 200);
-        popupStage.setScene(popupScene);
-        popupStage.showAndWait();
-    }
-
-    @FXML
-    public void showDisplayRangePopup() {
-        Stage popupStage = new Stage();
-        popupStage.setTitle("Display Range");
-
-        VBox popupLayout = new VBox(10);
-        popupLayout.setPadding(new Insets(20));
-
-        ComboBox<String> rangeComboBox = new ComboBox<>();
-        rangeComboBox.setPromptText("Select range");
-        rangeComboBox.getItems().addAll(appController.getSpreadsheetController().getSpreadsheet().getAllRangeNames());
-
-        Button displayButton = new Button("Display");
-        displayButton.setDisable(true);
-
-        rangeComboBox.setOnAction(event -> displayButton.setDisable(rangeComboBox.getValue() == null));
-
-        displayButton.setOnAction(event -> {
-            String selectedRange = rangeComboBox.getValue();
-            Set<String> cellIdsInRange = appController.getSpreadsheetController().getSpreadsheet().getRangeCells(selectedRange);
-
-            if (cellIdsInRange != null) {
-                appController.getSpreadsheetController().highlightCellsInRange(cellIdsInRange);
-                popupStage.close();
-            } else {
-                appController.showError("", "No range found for the selected range: " + selectedRange);
-            }
-        });
-
-        Button cancelButton = new Button("Cancel");
-        cancelButton.setOnAction(event -> popupStage.close());
-
-        popupLayout.getChildren().addAll(new Label("Select range to display:"), rangeComboBox, new HBox(10, cancelButton, displayButton));
-        Scene popupScene = new Scene(popupLayout, 300, 200);
-        popupStage.setScene(popupScene);
-        popupStage.showAndWait();
-    }
-
-    @FXML
-    public void showCommandsMenu() {
-        // Get the button's screen coordinates
-        double x = commandsTextArea.localToScreen(commandsTextArea.getBoundsInLocal()).getMinX();
-        double y = (commandsTextArea.localToScreen(commandsTextArea.getBoundsInLocal()).getMaxY()) -30;
-
-        // Show the ContextMenu near the button
-        commandsMenu.show(commandsTextArea, x, y);
-    }
-
-    @FXML
-    private void showRangesMenu() {
-        rangesMenu.show(rangesTextArea, Side.BOTTOM, 0, 0);
     }
 
     public void showColumnRowWidthChangePopup() {
@@ -1405,8 +1497,8 @@ public class CommandAndRangesController {
 
             if (selectedDimension.equals("Column")) {
 
-                    String columnIndex = selectedItem.replace("Column ", "");
-                    appController.getSpreadsheetController().applyWidthToColumn(columnIndex, valueInPixels);
+                String columnIndex = selectedItem.replace("Column ", "");
+                appController.getSpreadsheetController().applyWidthToColumn(columnIndex, valueInPixels);
 
             } else if (selectedDimension.equals("Row")) {
                 int rowIndex = Integer.parseInt(selectedItem.replace("Row ", ""));
@@ -1429,125 +1521,11 @@ public class CommandAndRangesController {
     private double convertToPixels(double enteredValue, String unit) {
         double pixelsPerInch = 96;
         double pixelsPerCentimeter = pixelsPerInch / 2.54;
-        switch (unit) {
-            case "Inches":
-                return enteredValue * pixelsPerInch;
-            case "Centimeters":
-                return enteredValue * pixelsPerCentimeter;
-            default:
-                return enteredValue; // Assume it's pixels
-        }
-    }
-
-    @FXML
-    public void showAlignmentMenu() {
-        int columnsNum = this.appController.getSpreadsheetController().getSpreadsheet().getNumOfColumns();
-        // Create a new Stage for the alignment popup
-        Stage popupStage = new Stage();
-        popupStage.setTitle("Align Text");
-
-        // Main layout - VBox with padding and spacing
-        VBox popupLayout = new VBox(20);
-        popupLayout.setPadding(new Insets(20));
-        popupLayout.setStyle("-fx-background-color: #ffffff; -fx-border-color: #dddddd; -fx-border-radius: 10px; -fx-border-width: 2; -fx-effect: dropshadow(gaussian, #888, 10, 0, 0, 0);");
-
-        // Instruction Label
-        Label instructionLabel = new Label("Select a column for alignment:");
-        instructionLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #333333;");
-
-        // ComboBox for column selection
-        ComboBox<String> columnComboBox = new ComboBox<>();
-        columnComboBox.setPromptText("Choose Column");
-        for(int i = 0; i < columnsNum; i++) {
-            String columnLetter = String.valueOf((char) ('A' + (i)));
-            columnComboBox.getItems().add(columnLetter);
-        }
-       // columnComboBox.getItems().addAll("A", "B", "C");  // Add column options dynamically
-
-        // Alignment options (Checkboxes)
-        CheckBox leftCheckBox = new CheckBox("Left");
-        CheckBox centerCheckBox = new CheckBox("Center");
-        CheckBox rightCheckBox = new CheckBox("Right");
-
-        // Disable checkboxes by default until a column is selected
-        leftCheckBox.setDisable(true);
-        centerCheckBox.setDisable(true);
-        rightCheckBox.setDisable(true);
-
-        // Enable checkboxes when a column is selected
-        columnComboBox.setOnAction(event -> {
-            if (columnComboBox.getValue() != null) {
-                leftCheckBox.setDisable(false);
-                centerCheckBox.setDisable(false);
-                rightCheckBox.setDisable(false);
-            }
-        });
-
-        // Ensure only one checkbox is selected at a time
-        leftCheckBox.setOnAction(event -> {
-            if (leftCheckBox.isSelected()) {
-                centerCheckBox.setSelected(false);
-                rightCheckBox.setSelected(false);
-            }
-        });
-        centerCheckBox.setOnAction(event -> {
-            if (centerCheckBox.isSelected()) {
-                leftCheckBox.setSelected(false);
-                rightCheckBox.setSelected(false);
-            }
-        });
-        rightCheckBox.setOnAction(event -> {
-            if (rightCheckBox.isSelected()) {
-                leftCheckBox.setSelected(false);
-                centerCheckBox.setSelected(false);
-            }
-        });
-
-        // Cancel and OK buttons
-        Button cancelButton = new Button("Cancel");
-        Button okButton = new Button("OK");
-
-        // Button styles
-        cancelButton.setStyle("-fx-background-color: #f44336; -fx-text-fill: white; -fx-font-weight: bold;");
-        okButton.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-font-weight: bold;");
-        okButton.setDisable(true); // Initially disabled
-
-        // Enable OK button only when an alignment option is selected
-        leftCheckBox.setOnAction(e -> okButton.setDisable(!leftCheckBox.isSelected()));
-        centerCheckBox.setOnAction(e -> okButton.setDisable(!centerCheckBox.isSelected()));
-        rightCheckBox.setOnAction(e -> okButton.setDisable(!rightCheckBox.isSelected()));
-
-        cancelButton.setOnAction(event -> popupStage.close());
-
-
-        okButton.setOnAction(event -> {
-            // Determine which alignment was selected
-            Pos alignment;
-            if (leftCheckBox.isSelected()) {
-                alignment = Pos.CENTER_LEFT;
-            } else if (centerCheckBox.isSelected()) {
-                alignment = Pos.CENTER;
-            } else {
-                alignment = Pos.CENTER_RIGHT;
-            }
-
-            // Apply alignment to the column in SpreadsheetController
-            appController.getSpreadsheetController().applyColumnAlignment(columnComboBox.getValue(), alignment);
-
-            popupStage.close();
-        });
-
-        // HBox for buttons
-        HBox buttonBox = new HBox(10, cancelButton, okButton);
-        buttonBox.setAlignment(Pos.CENTER_RIGHT);
-
-        // Add components to the layout
-        popupLayout.getChildren().addAll(instructionLabel, columnComboBox, leftCheckBox, centerCheckBox, rightCheckBox, buttonBox);
-
-        // Set the layout on the scene and show the popup
-        Scene popupScene = new Scene(popupLayout, 350, 250);
-        popupStage.setScene(popupScene);
-        popupStage.showAndWait();
+        return switch (unit) {
+            case "Inches" -> enteredValue * pixelsPerInch;
+            case "Centimeters" -> enteredValue * pixelsPerCentimeter;
+            default -> enteredValue; // Assume it's pixels
+        };
     }
 
     public void setMainController(appController appController) {

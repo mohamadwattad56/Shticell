@@ -14,10 +14,10 @@ public class CellDTO {
     private final List<String> dependents;
     private String lastModifiedBy;
 
-
     // New fields for text color and background color
     private String textColor; // Change to non-final to allow modification
     private String backgroundColor; // Change to non-final to allow modification
+
 
     // Constructor with all parameters
     public CellDTO(String cellId, Object sourceValue, Object effectiveValue, CellType type, int lastModifiedVersion, List<String> dependencies, List<String> dependents, String textColor, String backgroundColor) {
@@ -51,17 +51,38 @@ public class CellDTO {
         this(cellId, sourceValue, effectiveValue, type, lastModifiedVersion, dependencies, dependents, "black", "white"); // Default colors
     }
 
+    //setters
     public void setLastModifiedBy(String lastModifiedBy) {
         this.lastModifiedBy = lastModifiedBy;
     }
 
-    public String getLastModifiedBy() {
-        return lastModifiedBy;
+    public void setTextColor(String textColor) {
+        this.textColor = textColor;
+    }
+
+    public void setBackgroundColor(String backgroundColor) {
+        this.backgroundColor = backgroundColor;
+    }
+
+    public void setSourceValue(Object sourceValue) {
+        this.sourceValue = sourceValue;
+    }
+
+    public void setEffectiveValue(Object effectiveValue) {
+        this.effectiveValue = effectiveValue;
+    }
+
+    public void setLastModifiedVersion(int lastModifiedVersion) {
+        this.lastModifiedVersion = lastModifiedVersion;
     }
 
     // Getters
     public String getCellId() {
         return cellId;
+    }
+
+    public String getLastModifiedBy() {
+        return lastModifiedBy;
     }
 
     public Object getEffectiveValue() {
@@ -88,33 +109,11 @@ public class CellDTO {
         return dependents;
     }
 
-    // New getters for textColor and backgroundColor
     public String getTextColor() {
         return textColor;
     }
 
     public String getBackgroundColor() {
         return backgroundColor;
-    }
-
-    // Setters for textColor and backgroundColor
-    public void setTextColor(String textColor) {
-        this.textColor = textColor;
-    }
-
-    public void setBackgroundColor(String backgroundColor) {
-        this.backgroundColor = backgroundColor;
-    }
-
-    public void setSourceValue(Object sourceValue) {
-        this.sourceValue = sourceValue;
-    }
-
-    public void setEffectiveValue(Object effectiveValue) {
-        this.effectiveValue = effectiveValue;
-    }
-
-    public void setLastModifiedVersion(int lastModifiedVersion) {
-        this.lastModifiedVersion = lastModifiedVersion;
     }
 }

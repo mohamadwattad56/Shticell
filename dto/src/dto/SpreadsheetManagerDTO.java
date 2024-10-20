@@ -12,20 +12,13 @@ public class SpreadsheetManagerDTO {
     private final boolean isSheetLoaded;
     private  int currentVersion;
     private final String uploaderName;
-    private String currentUserName;  // Add current user
+    private String currentUserName;
 
-    public void setCurrentUserName(String currentUserName) {
-        this.currentUserName = currentUserName;
-    }
 
-    public String getCurrentUserName() {
-        return currentUserName;
-    }
 
-    public void setCurrentVersion(int currentVersion) {
-        this.currentVersion = currentVersion;
-    }
 
+
+    //ctor
     public SpreadsheetManagerDTO(SpreadsheetDTO spreadsheetDTO, List<VersionDTO> versionHistory, boolean isSheetLoaded, int currentVersion, String uploaderName) {
         this.spreadsheetDTO = spreadsheetDTO;
         this.versionHistory = versionHistory;
@@ -34,40 +27,66 @@ public class SpreadsheetManagerDTO {
         this.uploaderName = uploaderName;
     }
 
+    //setters
+    public void setCellTextColor(String cellId, Color color) {
+        // Find the matching cell in the DTO and update its text color
+        for (CellDTO cell : spreadsheetDTO.getCells()) {
+            if (cell.getCellId().equals(cellId)) {
+                cell.setTextColor(toRgbCode(color)); // Update the text color in the DTO
+            }
+        }
+    }
+
+    public void setCellBackgroundColor(String cellId, Color color) {
+        // Find the matching cell in the DTO and update its background color
+        for (CellDTO cell : spreadsheetDTO.getCells()) {
+            if (cell.getCellId().equals(cellId)) {
+                cell.setBackgroundColor(toRgbCode(color)); // Update the background color in the DTO
+            }
+        }
+    }
+
+    public void setCurrentUserName(String currentUserName) {
+        this.currentUserName = currentUserName;
+    }
+
+    public void setCurrentVersion(int currentVersion) {
+        this.currentVersion = currentVersion;
+    }
+    //getters
+
+    public String getCurrentUserName() {
+        return currentUserName;
+    }
+
     public SpreadsheetDTO getSpreadsheetDTO() {
         return spreadsheetDTO;
     }
 
-
-
     public int getCurrentVersion() {
         return currentVersion;
     }
+
     public String getUploaderName() {
         return uploaderName;
     }
 
-
-
     public String getCellTextColor(String cellId) {
         return spreadsheetDTO.getCellTextColor(cellId);
     }
+
     public String getCellBackgroundColor(String cellId) {
         return spreadsheetDTO.getCellBackgroundColor(cellId);
     }
 
-
     public CellDTO getCellDTO(String cellId) {
-        // Iterate through the list of cells to find the cell with the matching cellId
         for (CellDTO cell : spreadsheetDTO.getCells()) {
             if (cell.getCellId().equals(cellId)) {
                 return cell;
             }
         }
-        // Return an empty cell if not found
         return new CellDTO(cellId, "", "EMPTY", CellType.EMPTY, 0, new ArrayList<>(), new ArrayList<>(), "black", "white");
     }
-
 
     public int getNumOfRows() {
         return spreadsheetDTO.getRows();
@@ -81,6 +100,7 @@ public class SpreadsheetManagerDTO {
         return spreadsheetDTO.getAllRangeNames();
     }
 
+    //Functions
     public boolean addRange(String rangeName, String fromCellId, String toCellId) {
         // Check if the range already exists
         if (spreadsheetDTO.rangeExists(rangeName)) {
@@ -138,32 +158,12 @@ public class SpreadsheetManagerDTO {
         return null;
     }
 
-    public void setCellTextColor(String cellId, Color color) {
-        // Find the matching cell in the DTO and update its text color
-        for (CellDTO cell : spreadsheetDTO.getCells()) {
-            if (cell.getCellId().equals(cellId)) {
-                cell.setTextColor(toRgbCode(color)); // Update the text color in the DTO
-            }
-        }
-    }
-
-    public void setCellBackgroundColor(String cellId, Color color) {
-        // Find the matching cell in the DTO and update its background color
-        for (CellDTO cell : spreadsheetDTO.getCells()) {
-            if (cell.getCellId().equals(cellId)) {
-                cell.setBackgroundColor(toRgbCode(color)); // Update the background color in the DTO
-            }
-        }
-    }
-
-    // Helper method to convert Color object to RGB String
     private String toRgbCode(Color color) {
         return String.format("#%02X%02X%02X",
                  (color.getRed() * 255),
                  (color.getGreen() * 255),
                  (color.getBlue() * 255));
     }
-
 
     public void setInitialCellsModifiers(String uploaderName) {
         for (CellDTO cell : spreadsheetDTO.getCells()) {
@@ -172,8 +172,6 @@ public class SpreadsheetManagerDTO {
             }
         }
     }
-
-
 
     @Override
     public SpreadsheetManagerDTO clone() {

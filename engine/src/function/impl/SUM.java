@@ -7,7 +7,7 @@ import exception.RangeDoesNotExist;
 
 import java.util.Set;
 
-public class SUM extends AbstractFunctioUtils {
+public class SUM extends AbstractFunctionsUtils {
     private final Spreadsheet spreadsheet;
 
     public SUM(Spreadsheet spreadsheet) {

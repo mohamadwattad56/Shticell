@@ -24,7 +24,6 @@
     </orderEntry>
     <orderEntry type="module" module-name="server" />
     <orderEntry type="library" name="mod" level="project" />
-    <orderEntry type="module" module-name="controller" />
     <orderEntry type="module" module-name="dto" />
     <orderEntry type="library" name="apache-tomcat-10.1" level="project" />
     <orderEntry type="module" module-name="engine" />

@@ -1,5 +1,4 @@
 package dashboard.dashboardHeader;
-
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import dashboard.dashboardTables.DashboardTablesController;
@@ -12,23 +11,15 @@ import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
-import javafx.geometry.Insets;
-import javafx.geometry.Pos;
-import javafx.scene.Scene;
 import javafx.scene.control.*;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.StackPane;
-import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.util.Duration;
 import okhttp3.*;
+import org.jetbrains.annotations.NotNull;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Type;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
-
 import static httputils.Constants.UPLOAD_FILE;
 
 public class DashboardHeaderController {
@@ -39,30 +30,22 @@ public class DashboardHeaderController {
     @FXML
     private TextField filePathField;
 
- /*   @FXML
-    private ProgressBar progressBar;*/
-
     @FXML
     private Label dashUserName;
 
     @FXML
     private Label successHintLabel;
 
-    private Timeline fetchFilesTimeline;
-    private Set<String> uploadedFilesSet = new HashSet<>(); // To track added files
     private MainDashboardController mainDashboardController;  // Reference to MainDashboardController
 
     private static final String UPLOAD_URL = "http://localhost:8080/server_Web/uploadFile";  // Your upload servlet URL
 
     public void initialize() {
         loadFileButton.setOnAction(event -> handleLoadFile());
-        // Add Timeline for polling every 2 seconds
-       // startFetchingFiles(); // Start fetching the uploaded files every 2 seconds
-
     }
 
     public void startFetchingFiles() {
-        fetchFilesTimeline = new Timeline(new KeyFrame(Duration.seconds(0.5), event -> fetchUploadedFiles()));
+        Timeline fetchFilesTimeline = new Timeline(new KeyFrame(Duration.seconds(0.5), event -> fetchUploadedFiles()));
         fetchFilesTimeline.setCycleCount(Timeline.INDEFINITE); // Run indefinitely every 2 seconds
         fetchFilesTimeline.play();
     }
@@ -71,18 +54,19 @@ public class DashboardHeaderController {
         OkHttpClient client = new OkHttpClient();
 
         Request request = new Request.Builder()
-                .url("http://localhost:8080/server_Web/getUploadedFiles")
+                .url(UPLOAD_FILE)
                 .get()
                 .build();
 
         client.newCall(request).enqueue(new Callback() {
             @Override
-            public void onFailure(Call call, IOException e) {
+            public void onFailure(@NotNull Call call, @NotNull IOException e) {
                 Platform.runLater(() -> System.out.println("Failed to fetch uploaded files: " + e.getMessage()));
             }
 
             @Override
-            public void onResponse(Call call, Response response) throws IOException {
+            public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
+                assert response.body() != null;
                 String responseData = response.body().string();
                 Platform.runLater(() -> {
                     Gson gson = new Gson();
@@ -138,11 +122,6 @@ public class DashboardHeaderController {
         });
     }
 
-
-
-
-
-
     private void handleLoadFile() {
         FileChooser fileChooser = new FileChooser();
         fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("XML Files", "*.xml"));
@@ -155,16 +134,13 @@ public class DashboardHeaderController {
     }
 
     private void uploadFileToServer(File file) {
-
-
         String uploaderName = dashUserName.getText();  // The uploader's name
         String filePath = file.getAbsolutePath();  // Get the absolute file path
-        String url = UPLOAD_URL;  // The server upload URL
 
         // Use the new uploadFileAsync method
-        HttpClientUtil.uploadFileAsync(url, file, filePath, uploaderName, new Callback() {
+        HttpClientUtil.uploadFileAsync(UPLOAD_URL, file, filePath, uploaderName, new Callback() {
             @Override
-            public void onFailure(Call call, IOException e) {
+            public void onFailure(@NotNull Call call, @NotNull IOException e) {
                 Platform.runLater(() -> {
                   //  progressBar.setProgress(0.0);
                     System.out.println("Upload failed: " + e.getMessage());
@@ -174,11 +150,11 @@ public class DashboardHeaderController {
             }
 
             @Override
-            public void onResponse(Call call, Response response) throws IOException {
+            public void onResponse(@NotNull Call call, @NotNull Response response) {
                 Platform.runLater(() -> {
                 //    progressBar.setProgress(1.0);
                     if (response.isSuccessful()) {
-                        showSuccessHint("File uploaded successfully!");
+                        showSuccessHint();
 
                         if (mainDashboardController != null) {
                             fetchUploadedFiles();  // Fetch updated files after successful upload
@@ -187,6 +163,7 @@ public class DashboardHeaderController {
                         // Extract the error message from the response body
                         String responseBody;
                         try {
+                            assert response.body() != null;
                             responseBody = response.body().string();
                             String errorMessage = extractErrorMessage(responseBody);  // Extract the message
                             System.out.println("Upload failed: " + errorMessage);
@@ -211,7 +188,7 @@ public class DashboardHeaderController {
         if (messageIndex != -1) {
             int startIndex = htmlResponse.indexOf("</b>", messageIndex) + 4;
             int endIndex = htmlResponse.indexOf("</p>", startIndex);
-            if (startIndex != -1 && endIndex != -1) {
+            if (endIndex != -1) {
                 errorMessage = htmlResponse.substring(startIndex, endIndex).trim();
             }
         }
@@ -228,12 +205,12 @@ public class DashboardHeaderController {
         alert.showAndWait();
     }
 
-    private void showSuccessHint(String message) {
+    private void showSuccessHint() {
         // Get the success label from the FXML
         Label successHintLabel = this.mainDashboardController.getDashboardHeaderController().getSuccessHintLabel();
 
         // Set the message and make it visible
-        successHintLabel.setText(message);
+        successHintLabel.setText("File uploaded successfully!");
         successHintLabel.setVisible(true);
 
         // Fade the label out after a few seconds
@@ -249,7 +226,6 @@ public class DashboardHeaderController {
         return successHintLabel;
     }
 
-
     public void setMainDashboardController(MainDashboardController mainDashboardController) {
         this.mainDashboardController = mainDashboardController;
     }
@@ -257,6 +233,7 @@ public class DashboardHeaderController {
     public void setDashUserName(String userName) {
         dashUserName.setText(userName);
     }
+
     public String getDashUserName() {
         return dashUserName.getText();
     }

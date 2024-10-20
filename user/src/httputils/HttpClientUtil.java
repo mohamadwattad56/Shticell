@@ -1,10 +1,6 @@
 package httputils;
-
 import okhttp3.*;
-import utils.ServletUtils;
-
 import java.io.File;
-import java.io.IOException;
 import java.util.function.Consumer;
 
 public class HttpClientUtil {

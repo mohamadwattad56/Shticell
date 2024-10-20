@@ -9,6 +9,8 @@ import Spreadsheet.impl.SpreadsheetManager;
 import java.io.IOException;
 import java.util.Map;
 
+import static constant.Constant.*;
+
 
 @WebServlet("/requestPermission")
 public class RequestPermissionServlet extends HttpServlet {
@@ -16,8 +18,8 @@ public class RequestPermissionServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
-        String sheetName = request.getParameter("sheetName");
-        String username = request.getParameter("username");
+        String sheetName = request.getParameter(SHEET_NAME);
+        String username = request.getParameter(USERNAME);
         String permissionType = request.getParameter("permissionType");
 
         if (sheetName == null || username == null || permissionType == null) {
@@ -27,7 +29,7 @@ public class RequestPermissionServlet extends HttpServlet {
 
         // Retrieve the spreadsheet manager
         Map<String, SpreadsheetManager> spreadsheetManagerMap =
-                (Map<String, SpreadsheetManager>) getServletContext().getAttribute("spreadsheetManagerMap");
+                (Map<String, SpreadsheetManager>) getServletContext().getAttribute(SPREADSHEET_MAP);
 
         SpreadsheetManager spreadsheetManager = spreadsheetManagerMap.get(sheetName);
 

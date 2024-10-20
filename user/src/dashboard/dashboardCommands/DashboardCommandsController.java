@@ -1,5 +1,4 @@
 package dashboard.dashboardCommands;
-
 import com.google.gson.Gson;
 import dashboard.chat.main.ChatAppMainController;
 import dashboard.dashboardTables.DashboardTablesController;
@@ -20,7 +19,7 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 import okhttp3.*;
-
+import org.jetbrains.annotations.NotNull;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
@@ -28,11 +27,12 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import static constant.Constant.SHEET_NAME;
+import static constant.Constant.USERNAME;
+import static httputils.Constants.*;
+
 
 public class DashboardCommandsController {
-    private MainDashboardController mainDashboardController;
-
-    private ChatAppMainController chatAppMainController;
 
     @FXML
     private Button viewSheetButton;
@@ -46,6 +46,7 @@ public class DashboardCommandsController {
     @FXML
     private Button chatButton;
 
+    private MainDashboardController mainDashboardController;
 
     @FXML
     public void initialize() {
@@ -74,8 +75,6 @@ public class DashboardCommandsController {
             }
         });
     }
-
-
 
     private void switchToChat() {
         try {
@@ -108,12 +107,6 @@ public class DashboardCommandsController {
         }
     }
 
-
-
-
-
-
-
     private void handleViewSheet() throws UnsupportedEncodingException {
         // Get the selected sheet from DashboardTablesController
         DashboardTablesController.SheetRowData selectedSheet = mainDashboardController.getDashboardTablesController().getSelectedSheet();
@@ -125,7 +118,7 @@ public class DashboardCommandsController {
             // Fetch the user's permission for this sheet from the server
             fetchUserPermission(sheetName, username, permission -> {
                 if (permission.equals("NONE")) {
-                    this.mainDashboardController.getAppController().showError("No permissions.","You do not have permission to view this sheet.");;
+                    this.mainDashboardController.getAppController().showError("No permissions.","You do not have permission to view this sheet.");
                 } else {
                     try {
                         // Call displaySheet with the permission type
@@ -140,31 +133,27 @@ public class DashboardCommandsController {
         }
     }
 
-
-
     private void requestPermission(String sheetName, String requestedPermission, String uploaderName) {
         OkHttpClient client = new OkHttpClient();
-        String url = "http://localhost:8080/server_Web/requestPermission";
-
         RequestBody requestBody = new FormBody.Builder()
-                .add("sheetName", sheetName)
-                .add("username", this.mainDashboardController.getDashboardHeaderController().getDashUserName())  // The user requesting access
+                .add(SHEET_NAME, sheetName)
+                .add(USERNAME, this.mainDashboardController.getDashboardHeaderController().getDashUserName())  // The user requesting access
                 .add("permissionType", requestedPermission)  // READER or WRITER
                 .build();
 
         Request request = new Request.Builder()
-                .url(url)
+                .url(REQUEST_PERMISSION)
                 .post(requestBody)
                 .build();
 
         client.newCall(request).enqueue(new Callback() {
             @Override
-            public void onFailure(Call call, IOException e) {
+            public void onFailure(@NotNull Call call, @NotNull IOException e) {
                 Platform.runLater(() -> System.out.println("Permission request failed: " + e.getMessage()));
             }
 
             @Override
-            public void onResponse(Call call, Response response) throws IOException {
+            public void onResponse(@NotNull Call call, @NotNull Response response) {
                 Platform.runLater(() -> {
                     if (response.isSuccessful()) {
                         mainDashboardController.fetchSheetPermissions(sheetName, uploaderName);  // Refresh the permissions table
@@ -177,21 +166,21 @@ public class DashboardCommandsController {
         });
     }
 
-
     public void fetchUserPermission(String sheetName, String username, Consumer<String> callback) {
         OkHttpClient client = new OkHttpClient();
-        String url = "http://localhost:8080/server_Web/getUserPermission?sheetName=" + sheetName + "&username=" + username;
+        String url = USER_PERMISSION+ "?sheetName=" + sheetName + "&username=" + username;
 
         Request request = new Request.Builder().url(url).get().build();
 
         client.newCall(request).enqueue(new Callback() {
             @Override
-            public void onFailure(Call call, IOException e) {
+            public void onFailure(@NotNull Call call, @NotNull IOException e) {
                 Platform.runLater(() -> System.out.println("Failed to fetch user permission: " + e.getMessage()));
             }
 
             @Override
-            public void onResponse(Call call, Response response) throws IOException {
+            public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
+                assert response.body() != null;
                 String responseData = response.body().string();
                 Platform.runLater(() -> {
                     callback.accept(responseData);  // Pass the permission string to the callback
@@ -199,8 +188,6 @@ public class DashboardCommandsController {
             }
         });
     }
-
-
 
     private void handleRequestPermission() {
 
@@ -248,12 +235,9 @@ public class DashboardCommandsController {
         }
     }
 
-
-
-
     private void fetchPendingRequests(String sheetName) {
         OkHttpClient client = new OkHttpClient();
-        String url = "http://localhost:8080/server_Web/getPendingRequests?sheetName=" + sheetName;
+        String url = PENDING_REQUESTS + "/getPendingRequests?sheetName=" + sheetName;
 
         Request request = new Request.Builder()
                 .url(url)
@@ -262,12 +246,13 @@ public class DashboardCommandsController {
 
         client.newCall(request).enqueue(new Callback() {
             @Override
-            public void onFailure(Call call, IOException e) {
+            public void onFailure(@NotNull Call call, @NotNull IOException e) {
                 Platform.runLater(() -> System.out.println("Failed to fetch pending requests: " + e.getMessage()));
             }
 
             @Override
-            public void onResponse(Call call, Response response) throws IOException {
+            public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
+                assert response.body() != null;
                 String responseData = response.body().string();
 
                 // Parse the response into PermissionRequestDTO objects
@@ -279,9 +264,6 @@ public class DashboardCommandsController {
             }
         });
     }
-
-
-
 
     private void showPendingRequestsPopup(List<PermissionRequestDTO> pendingRequests, String sheetName) {
         TableView<DashboardTablesController.PermissionRowData> requestTable = new TableView<>();
@@ -349,41 +331,34 @@ public class DashboardCommandsController {
         popupStage.show();
     }
 
-    // Helper method to convert PermissionRowData back to PermissionRequestDTO for server-side actions
     private PermissionRequestDTO convertRowDataToDTO(DashboardTablesController.PermissionRowData rowData, String sheetName) {
         PermissionRequestDTO.RequestStatus isApproved = rowData.getStatus().equalsIgnoreCase("PENDING") ? PermissionRequestDTO.RequestStatus.PENDING : rowData.getStatus().equalsIgnoreCase("approved") ? PermissionRequestDTO.RequestStatus.APPROVED : PermissionRequestDTO.RequestStatus.DENIED;
         return new PermissionRequestDTO(rowData.getUserName(), rowData.getPermissionType(), isApproved, sheetName);
     }
 
-
-
-
-
-
     private void handlePermissionApproval(PermissionRequestDTO request, String decision, TableView<DashboardTablesController.PermissionRowData> requestTable) {
         OkHttpClient client = new OkHttpClient();
-        String url = "http://localhost:8080/server_Web/acknowledgePermission";
 
         // Send the approve/deny decision to the server
         RequestBody requestBody = new FormBody.Builder()
-                .add("sheetName", request.getSheetName())  // Sheet for which the permission is requested
-                .add("username", request.getUsername())    // The user requesting the permission
+                .add(SHEET_NAME, request.getSheetName())  // Sheet for which the permission is requested
+                .add(USERNAME, request.getUsername())    // The user requesting the permission
                 .add("decision", decision)                // "approve" or "deny"
                 .build();
 
         Request httpRequest = new Request.Builder()
-                .url(url)
+                .url(PERMISSION_ACK)
                 .post(requestBody)
                 .build();
 
         client.newCall(httpRequest).enqueue(new Callback() {
             @Override
-            public void onFailure(Call call, IOException e) {
+            public void onFailure(@NotNull Call call, @NotNull IOException e) {
                 Platform.runLater(() -> System.out.println("Failed to " + decision + " request: " + e.getMessage()));
             }
 
             @Override
-            public void onResponse(Call call, Response response) throws IOException {
+            public void onResponse(@NotNull Call call, @NotNull Response response) {
                 Platform.runLater(() -> {
                     if (response.isSuccessful()) {
                         // Remove the approved/denied item from the table
@@ -404,8 +379,6 @@ public class DashboardCommandsController {
         });
     }
 
-
-
     private void showSuccessHint(String message) {
         // Show a label with the success message
         Label successLabel = new Label(message);
@@ -424,12 +397,7 @@ public class DashboardCommandsController {
         fadeTransition.play();
     }
 
-
     public void setMainController(MainDashboardController mainController) {
         this.mainDashboardController = mainController;
-    }
-
-    public void setChatAppMainController(ChatAppMainController chatAppMainController) {
-        this.chatAppMainController = chatAppMainController; // Set the chat app controller
     }
 }

@@ -28,7 +28,6 @@
     <orderEntry type="library" name="gson-2.1" level="project" />
     <orderEntry type="module" module-name="engine" />
     <orderEntry type="module" module-name="dto" />
-    <orderEntry type="module" module-name="controller" />
     <orderEntry type="library" name="mod" level="project" />
     <orderEntry type="library" name="javafx-sdk-22.0" level="project" />
   </component>

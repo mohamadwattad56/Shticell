@@ -3,18 +3,19 @@
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.layout.VBox?>
 
-<VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="191.0" xmlns="http://javafx.com/javafx/23" xmlns:fx="http://javafx.com/fxml/1" fx:controller="dashboard.dashboardCommands.DashboardCommandsController" spacing="10.0">
-    <children>
-        <!-- View Sheet Button -->
-        <Button fx:id="viewSheetButton" text="View Sheet" prefHeight="100.0" prefWidth="198.0" />
+<VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0"
+      prefWidth="191.0" xmlns="http://javafx.com/javafx/23" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="dashboard.dashboardCommands.DashboardCommandsController" spacing="10.0">
+    <!-- View Sheet Button -->
+    <Button fx:id="viewSheetButton" text="View Sheet" prefHeight="100.0" prefWidth="198.0"/>
 
-        <!-- Request Permission Button -->
-        <Button fx:id="requestPermissionButton" text="Request Permission" prefHeight="100.0" prefWidth="198.0" />
+    <!-- Request permission Button -->
+    <Button fx:id="requestPermissionButton" text="Request permission" prefHeight="100.0" prefWidth="198.0"/>
 
-        <!-- Acknowledge/Deny Permission Request Button -->
-        <Button fx:id="acknowledgePermissionButton" text="Acknowledge/Deny Permission" prefHeight="100.0" prefWidth="198.0" />
+    <!-- Acknowledge/Deny permission Request Button -->
+    <Button fx:id="acknowledgePermissionButton" text="Acknowledge/Deny permission" prefHeight="100.0"
+            prefWidth="198.0"/>
 
-        <!-- Chat Button -->
-        <Button fx:id="chatButton" text="Chat" prefHeight="100.0" prefWidth="198.0" />
-    </children>
+    <!-- Chat Button -->
+    <Button fx:id="chatButton" text="Chat" prefHeight="100.0" prefWidth="198.0"/>
 </VBox>

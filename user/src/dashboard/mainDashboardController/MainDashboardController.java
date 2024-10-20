@@ -1,14 +1,11 @@
 package dashboard.mainDashboardController;
-
 import com.google.gson.Gson;
 import dashboard.dashboardCommands.DashboardCommandsController;
 import dashboard.dashboardHeader.DashboardHeaderController;
 import dashboard.dashboardTables.DashboardTablesController;
 import dto.PermissionRequestDTO;
 import dto.SpreadsheetManagerDTO;
-import javafx.animation.Animation;
 import javafx.application.Platform;
-import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.control.TableColumn;
@@ -20,21 +17,22 @@ import javafx.scene.layout.VBox;
 import javafx.scene.layout.StackPane;
 import okhttp3.*;
 import gridPageController.mainController.appController;
-
-
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.util.Duration;
+import org.jetbrains.annotations.NotNull;
 
-
+import static httputils.Constants.*;
 
 public class MainDashboardController {
+
     private Timeline fetchTimeline;
 
     @FXML
@@ -43,24 +41,20 @@ public class MainDashboardController {
     @FXML
     private HBox centerHBox;  // Container for tables and commands
 
-    private DashboardHeaderController dashboardHeaderController;
-    private DashboardTablesController dashboardTablesController;
-    private DashboardCommandsController dashboardCommandsController;
-
     @FXML
     private appController appController;  // Declare appController as a field
-    private BorderPane dashboardState;  // Store the current state of the dashboard
 
-    // Method to handle when the dashboard is closed
-    public void onDashboardClose() {
+    private DashboardHeaderController dashboardHeaderController;
 
-    }
+    private DashboardTablesController dashboardTablesController;
+
+    private DashboardCommandsController dashboardCommandsController;
 
     @FXML
     public void initialize() {
         try {
             // Load the header
-            FXMLLoader headerLoader = new FXMLLoader(getClass().getResource("/dashboard/dashboardHeader/dashHeader.fxml"));
+            FXMLLoader headerLoader = new FXMLLoader(getClass().getResource(DASHBOARD_HEADER_FXML_RESOURCE_LOCATION));
             VBox header = headerLoader.load();  // Load the header FXML
             dashboardHeaderController = headerLoader.getController();  // Get the controller
             mainLayout.setTop(header);  // Set the header in the top region
@@ -72,20 +66,20 @@ public class MainDashboardController {
             dashboardHeaderController.startFetchingFiles();  // Call this after the controller is set
 
             // Load the tables
-            FXMLLoader tablesLoader = new FXMLLoader(getClass().getResource("/dashboard/dashboardTables/dashTables.fxml"));
+            FXMLLoader tablesLoader = new FXMLLoader(getClass().getResource(DASHBOARD_TABLES_FXML_RESOURCE_LOCATION));
             VBox tables = tablesLoader.load();  // Load the tables FXML
             dashboardTablesController = tablesLoader.getController();  // Get the controller
             centerHBox.getChildren().add(tables);  // Add the tables to the centerHBox
 
             // Load the commands
-            FXMLLoader commandsLoader = new FXMLLoader(getClass().getResource("/dashboard/dashboardCommands/dashCommands.fxml"));
+            FXMLLoader commandsLoader = new FXMLLoader(getClass().getResource(DASHBOARD_COMMANDS_FXML_RESOURCE_LOCATION));
             VBox commands = commandsLoader.load();  // Load the commands FXML
             dashboardCommandsController = commandsLoader.getController();  // Get the controller
             centerHBox.getChildren().add(commands);  // Add the commands to the centerHBox
 
 
             // Load the appController (Main layout for the grid page)
-            FXMLLoader appLoader = new FXMLLoader(getClass().getResource("/gridPageController/mainController/MainLayout.fxml"));
+            FXMLLoader appLoader = new FXMLLoader(getClass().getResource(SHEET_MAIN_LAYOUT_FXML_RESOURCE_LOCATION));
             StackPane appPane = appLoader.load();  // Load the main layout FXML
             appController = appLoader.getController();  // Get the appController
 
@@ -100,44 +94,23 @@ public class MainDashboardController {
         }
     }
 
-
-
     public appController getAppController() {
         return appController;
-    }
-    public HBox getCenterHBox() {
-        return centerHBox;
     }
 
     public BorderPane getMainLayout() {
         return mainLayout;
     }
 
-    // Method to set the dashboard username
     public void setDashUserName(String dashUserName) {
         if (dashboardHeaderController != null) {
             dashboardHeaderController.setDashUserName(dashUserName);
         }
     }
 
-
-    public void setDashboardCommandsController(DashboardCommandsController dashboardCommandsController) {
-        this.dashboardCommandsController = dashboardCommandsController;
-    }
-    public void setDashboardHeaderController(DashboardHeaderController dashboardHeaderController) {
-        this.dashboardHeaderController = dashboardHeaderController;
-    }
-
-
     public void handleSheetSelection(String sheetName, String uploader) throws UnsupportedEncodingException {
         // Initialize or restart the periodic fetch
         startPeriodicFetch(sheetName, uploader);
-    }
-
-    private void stopPeriodicFetch() {
-        if (fetchTimeline != null && fetchTimeline.getStatus() == Animation.Status.RUNNING) {
-            fetchTimeline.stop();  // Stop the timeline when it's no longer needed
-        }
     }
 
     private void startPeriodicFetch(String sheetName, String uploaderName) {
@@ -147,9 +120,7 @@ public class MainDashboardController {
         }
 
         // Create a new timeline to fetch data every 200ms
-        fetchTimeline = new Timeline(new KeyFrame(Duration.millis(200), event -> {
-            fetchSheetPermissions(sheetName, uploaderName);
-        }));
+        fetchTimeline = new Timeline(new KeyFrame(Duration.millis(200), event -> fetchSheetPermissions(sheetName, uploaderName)));
 
         fetchTimeline.setCycleCount(Timeline.INDEFINITE);  // Run indefinitely
         fetchTimeline.play();  // Start fetching
@@ -158,7 +129,7 @@ public class MainDashboardController {
     public void fetchSheetPermissions(String sheetName, String uploaderName) {
 
         OkHttpClient client = new OkHttpClient();
-        String url = "http://localhost:8080/server_Web/getAllPermissions?sheetName=" + sheetName + "&uploaderName=" + uploaderName;
+        String url = GET_PERMISSIONS + "?sheetName=" + sheetName + "&uploaderName=" + uploaderName;
 
         Request request = new Request.Builder()
                 .url(url)
@@ -167,13 +138,14 @@ public class MainDashboardController {
 
         client.newCall(request).enqueue(new Callback() {
             @Override
-            public void onFailure(Call call, IOException e) {
+            public void onFailure(@NotNull Call call, @NotNull IOException e) {
                 Platform.runLater(() -> System.out.println("Failed to fetch sheet permissions: " + e.getMessage()));
             }
 
             @Override
-            public void onResponse(Call call, Response response) throws IOException {
+            public void onResponse(@NotNull Call call, @NotNull Response response) {
                 try {
+                    assert response.body() != null;
                     String responseData = response.body().string();
 
                     Gson gson = new Gson();
@@ -183,7 +155,7 @@ public class MainDashboardController {
 
                     Platform.runLater(() -> {
                         updatePermissionsTable(Arrays.asList(permissionInfoArray), uploaderName);
-                        updateTableView1Permissions(Arrays.asList(permissionInfoArray), uploaderName, sheetName);
+                        updateTableView1Permissions(Arrays.asList(permissionInfoArray), sheetName);
                     });
                 } catch (Exception e) {
                     e.printStackTrace();  // Catch any exceptions
@@ -215,7 +187,7 @@ public class MainDashboardController {
 
         // Ensure the owner is always in the list
         DashboardTablesController.PermissionRowData ownerRow = new DashboardTablesController.PermissionRowData(uploaderName, "OWNER", "Approved");
-        newDataList.add(0, ownerRow);  // Add the owner to the beginning of the list
+        newDataList.addFirst(ownerRow);  // Add the owner to the beginning of the list
 
         // Compare the new data with the current data in the table
         if (!tableView2.getItems().equals(newDataList)) {
@@ -224,7 +196,7 @@ public class MainDashboardController {
         }
     }
 
-    private void updateTableView1Permissions(List<PermissionRequestDTO> permissions, String uploaderName, String sheetName) {
+    private void updateTableView1Permissions(List<PermissionRequestDTO> permissions, String sheetName) {
         String currentUser = this.dashboardHeaderController.getDashUserName();  // Get the current user's username
         TableView<DashboardTablesController.SheetRowData> tableView1 = this.dashboardTablesController.getTableView1();  // Get TableView1
 
@@ -267,9 +239,9 @@ public class MainDashboardController {
         OkHttpClient client = new OkHttpClient();
         String userName = this.dashboardHeaderController.getDashUserName();
         String url = String.format("http://localhost:8080/server_Web/getSpreadsheet?sheetName=%s&uploaderName=%s&userName=%s",
-                URLEncoder.encode(sheetName, "UTF-8"),
-                URLEncoder.encode(uploaderName, "UTF-8"),
-                URLEncoder.encode(userName, "UTF-8"));
+                URLEncoder.encode(sheetName, StandardCharsets.UTF_8),
+                URLEncoder.encode(uploaderName, StandardCharsets.UTF_8),
+                URLEncoder.encode(userName, StandardCharsets.UTF_8));
 
         Request request = new Request.Builder()
                 .url(url)
@@ -278,12 +250,13 @@ public class MainDashboardController {
 
         client.newCall(request).enqueue(new Callback() {
             @Override
-            public void onFailure(Call call, IOException e) {
+            public void onFailure(@NotNull Call call, @NotNull IOException e) {
                 Platform.runLater(() -> System.out.println("Failed to fetch spreadsheet: " + e.getMessage()));
             }
 
             @Override
-            public void onResponse(Call call, Response response) throws IOException {
+            public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
+                assert response.body() != null;
                 String responseData = response.body().string();
                 Platform.runLater(() -> {
                     try {
@@ -394,12 +367,6 @@ public class MainDashboardController {
         });
     }
 
-
-
-
-    public void setDashboardTablesController(DashboardTablesController dashboardTablesController) {
-        this.dashboardTablesController = dashboardTablesController;
-    }
 
     public DashboardTablesController getDashboardTablesController() {
         return dashboardTablesController;

@@ -12,19 +12,21 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Map;
 
+import static constant.Constant.*;
+
 @WebServlet("/getCellUpdate")
 public class GetCellUpdateServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
         // Get the cell identifier and sheet name from the request parameters
-        String cellId = request.getParameter("cellId");
-        String sheetName = request.getParameter("sheetName");
-        String userName = request.getParameter("userName"); // User who is viewing the sheet
+        String cellId = request.getParameter(CELL_ID);
+        String sheetName = request.getParameter(SHEET_NAME);
+        String userName = request.getParameter(USERNAME); // User who is viewing the sheet
 
         // Fetch the spreadsheet manager map from the servlet context
         Map<String, SpreadsheetManager> spreadsheetManagerMap =
-                (Map<String, SpreadsheetManager>) getServletContext().getAttribute("spreadsheetManagerMap");
+                (Map<String, SpreadsheetManager>) getServletContext().getAttribute(SPREADSHEET_MAP);
 
         // Retrieve the correct SpreadsheetManager instance for the specified sheet
         SpreadsheetManager spreadsheetManager = spreadsheetManagerMap.get(sheetName);

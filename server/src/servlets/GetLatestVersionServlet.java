@@ -9,16 +9,19 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Map;
 
+import static constant.Constant.SHEET_NAME;
+import static constant.Constant.SPREADSHEET_MAP;
+
 @WebServlet("/getLatestVersion")
 public class GetLatestVersionServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        String sheetName = request.getParameter("sheetName");
+        String sheetName = request.getParameter(SHEET_NAME);
 
         // Retrieve the spreadsheet manager map
         Map<String, SpreadsheetManager> spreadsheetManagerMap =
-                (Map<String, SpreadsheetManager>) getServletContext().getAttribute("spreadsheetManagerMap");
+                (Map<String, SpreadsheetManager>) getServletContext().getAttribute(SPREADSHEET_MAP);
 
         SpreadsheetManager spreadsheetManager = spreadsheetManagerMap.get(sheetName);
 

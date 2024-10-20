@@ -10,13 +10,16 @@ import jakarta.servlet.http.*;
 import java.io.IOException;
 import java.util.Map;
 
+import static constant.Constant.SHEET_NAME;
+import static constant.Constant.SPREADSHEET_MAP;
+
 @WebServlet("/getVersion")
 public class LoadVersionServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
         // Retrieve the sheet name and version number from the request
-        String sheetName = request.getParameter("sheetName");
+        String sheetName = request.getParameter(SHEET_NAME);
         String versionNumberStr = request.getParameter("versionNumber");
 
         // Basic input validation
@@ -37,7 +40,7 @@ public class LoadVersionServlet extends HttpServlet {
 
         // Retrieve the spreadsheet map from the context (as SpreadsheetManager)
         Map<String, SpreadsheetManager> spreadsheetManagerMap =
-                (Map<String, SpreadsheetManager>) getServletContext().getAttribute("spreadsheetManagerMap");
+                (Map<String, SpreadsheetManager>) getServletContext().getAttribute(SPREADSHEET_MAP);
 
         if (spreadsheetManagerMap == null || spreadsheetManagerMap.isEmpty()) {
             response.setStatus(HttpServletResponse.SC_NOT_FOUND);

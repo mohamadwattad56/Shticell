@@ -10,15 +10,9 @@ import static constant.Constant.INT_PARAMETER_ERROR;
 public class ServletUtils {
 
     private static final String USER_MANAGER_ATTRIBUTE_NAME = "userManager";
-    private static final String SHEETCELL_MANAGER_ATTRIBUTE_NAME = "sheetCellManager";
-    private static final String ENGINE_MANAGER_ATTRIBUTE_NAME = "engineManager";
-    private static final String FILE_MANAGER_ATTRIBUTE_NAME = "fileManager";  // Add FileManager attribute name
 
     // Synchronization locks for the manager attributes
     private static final Object userManagerLock = new Object();
-    private static final Object sheetCellManagerLock = new Object();
-    private static final Object engineManagerLock = new Object();
-    private static final Object fileManagerLock = new Object();  // Lock for FileManager
     private static final Object chatManagerLock = new Object();
     private static final String CHAT_MANAGER_ATTRIBUTE_NAME = "chatManager";
 
@@ -35,15 +29,7 @@ public class ServletUtils {
         return (UserManager) servletContext.getAttribute(USER_MANAGER_ATTRIBUTE_NAME);
     }
 
-    // Fetch the FileManager and initialize it if it doesn't exist
-    public static FileManager getFileManager(ServletContext servletContext) {
-        synchronized (fileManagerLock) {
-            if (servletContext.getAttribute(FILE_MANAGER_ATTRIBUTE_NAME) == null) {
-                servletContext.setAttribute(FILE_MANAGER_ATTRIBUTE_NAME, new FileManager());
-            }
-        }
-        return (FileManager) servletContext.getAttribute(FILE_MANAGER_ATTRIBUTE_NAME);
-    }
+
 
     public static ChatManager getChatManager(ServletContext servletContext) {
         synchronized (chatManagerLock) {
@@ -59,7 +45,7 @@ public class ServletUtils {
         if (value != null) {
             try {
                 return Integer.parseInt(value);
-            } catch (NumberFormatException numberFormatException) {
+            } catch (NumberFormatException ignored) {
             }
         }
         return INT_PARAMETER_ERROR;

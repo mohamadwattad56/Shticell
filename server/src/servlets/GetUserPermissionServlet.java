@@ -9,6 +9,8 @@ import Spreadsheet.impl.SpreadsheetManager;
 import java.io.IOException;
 import java.util.Map;
 
+import static constant.Constant.*;
+
 @WebServlet("/getUserPermission")
 public class GetUserPermissionServlet extends HttpServlet {
 
@@ -16,8 +18,8 @@ public class GetUserPermissionServlet extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
 
-        String sheetName = request.getParameter("sheetName");
-        String username = request.getParameter("username");
+        String sheetName = request.getParameter(SHEET_NAME);
+        String username = request.getParameter(USERNAME);
 
         if (sheetName == null || username == null) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Missing required parameters.");
@@ -26,7 +28,7 @@ public class GetUserPermissionServlet extends HttpServlet {
 
         // Get the spreadsheet manager and user permission
         Map<String, SpreadsheetManager> spreadsheetManagerMap =
-                (Map<String, SpreadsheetManager>) getServletContext().getAttribute("spreadsheetManagerMap");
+                (Map<String, SpreadsheetManager>) getServletContext().getAttribute(SPREADSHEET_MAP);
         SpreadsheetManager spreadsheetManager = spreadsheetManagerMap.get(sheetName);
 
         if (spreadsheetManager == null) {

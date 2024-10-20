@@ -3,12 +3,16 @@ package constant;
 public class Constant {
     // User-related constants
     public static final String USERNAME = "username";
-    public static final String USER_ROLE = "user_role"; // Role of the user (e.g., admin, user)
-    public static final String USER_NAME_ERROR = "username_error";
+
+    // Sheet-related constants
+    public static final String SHEET_NAME = "sheetName";
+    public static final String SPREADSHEET_MAP = "spreadsheetManagerMap";
+    public static final String UPLOADER_MAP = "uploaderMap";
+    public static final String CELL_ID = "cellId";
+
+
 
     // Engine-related constants
-    public static final String ENGINE_STATE = "engine_state"; // Represents some engine-specific session data
-
     public static final String CHAT_PARAMETER = "userstring";
     public static final String CHAT_VERSION_PARAMETER = "chatversion";
 

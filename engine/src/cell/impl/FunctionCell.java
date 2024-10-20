@@ -16,20 +16,16 @@ public class FunctionCell extends CellImpl {
     private Cell[] args;
     private final Spreadsheet spreadsheet;
 
+    //ctor
     public FunctionCell(Object sourceValue, Functions function, Spreadsheet spreadsheet, Cell... args) {
         super(sourceValue);
         this.function = function;
         this.spreadsheet = spreadsheet;
         this.args = args;
     }
-    public Functions getFunction() {
-        return function;
-    }
 
-    public Cell[] getArgs() {
-        return args;
-    }
 
+    //setters
     @Override
     public void setSourceValue(Object sourceValue) {
         this.sourceValue = sourceValue;
@@ -48,10 +44,26 @@ public class FunctionCell extends CellImpl {
         }
         catch (InvalidCellReferenceException e)
         {
-         throw new InvalidCellReferenceException("Invalid cell reference: " + e.getMessage());
+            throw new InvalidCellReferenceException("Invalid cell reference: " + e.getMessage());
         }
     }
 
+    //getters
+
+    public Functions getFunction() {
+        return function;
+    }
+
+    public Cell[] getArgs() {
+        return args;
+    }
+
+    @Override
+    public CellType getType() {
+        return CellType.FUNCTION;
+    }
+
+    //Functions
     @Override
     protected void updateEffectiveValue() {
         if (function != null && args != null) {
@@ -98,15 +110,6 @@ public class FunctionCell extends CellImpl {
         }
     }
 
-
-
-
-
-    @Override
-    public CellType getType() {
-        return CellType.FUNCTION;
-    }
-
     private Cell resolveArgument(Cell arg) {
             if (arg instanceof StringCell) {
             String cellReference = ((StringCell) arg).getSourceValue().toString();
@@ -141,10 +144,6 @@ public class FunctionCell extends CellImpl {
             return false;
         });
     }
-
-
-
-
 
     private boolean isCellReference(String arg) {
         return arg.toUpperCase().trim().matches("[A-Z][0-9]+");

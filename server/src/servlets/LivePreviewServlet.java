@@ -1,15 +1,14 @@
 package servlets;
-
 import Spreadsheet.impl.SpreadsheetManager;
 import cell.impl.CellImpl;
-import com.google.gson.Gson;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-
 import java.io.IOException;
 import java.util.Map;
+import static constant.Constant.SHEET_NAME;
+import static constant.Constant.SPREADSHEET_MAP;
 
 @WebServlet("/calculateLivePreview")
 public class LivePreviewServlet extends HttpServlet {
@@ -22,9 +21,9 @@ public class LivePreviewServlet extends HttpServlet {
 
             // Fetch the SpreadsheetManager from the global map (instead of session)
             Map<String, SpreadsheetManager> spreadsheetManagerMap =
-                    (Map<String, SpreadsheetManager>) getServletContext().getAttribute("spreadsheetManagerMap");
+                    (Map<String, SpreadsheetManager>) getServletContext().getAttribute(SPREADSHEET_MAP);
 
-            String sheetName = request.getParameter("sheetName");  // Get the sheet name from request
+            String sheetName = request.getParameter(SHEET_NAME);  // Get the sheet name from request
             SpreadsheetManager manager = spreadsheetManagerMap.get(sheetName); // Retrieve the manager by sheet name
 
             if (manager == null) {

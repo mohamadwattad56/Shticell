@@ -9,14 +9,16 @@ import Spreadsheet.impl.SpreadsheetManager;
 import java.io.IOException;
 import java.util.Map;
 
+import static constant.Constant.*;
+
 @WebServlet("/acknowledgePermission")
 public class AcknowledgePermissionServlet extends HttpServlet {
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
-        String sheetName = request.getParameter("sheetName");
-        String username = request.getParameter("username");
+        String sheetName = request.getParameter(SHEET_NAME);
+        String username = request.getParameter(USERNAME);
         String decision = request.getParameter("decision");
 
         if (sheetName == null || username == null || decision == null) {
@@ -26,7 +28,7 @@ public class AcknowledgePermissionServlet extends HttpServlet {
 
         // Retrieve the spreadsheet manager
         Map<String, SpreadsheetManager> spreadsheetManagerMap =
-                (Map<String, SpreadsheetManager>) getServletContext().getAttribute("spreadsheetManagerMap");
+                (Map<String, SpreadsheetManager>) getServletContext().getAttribute(SPREADSHEET_MAP);
 
         SpreadsheetManager spreadsheetManager = spreadsheetManagerMap.get(sheetName);
 
@@ -50,6 +52,6 @@ public class AcknowledgePermissionServlet extends HttpServlet {
         }
 
         response.setStatus(HttpServletResponse.SC_OK);
-        response.getWriter().write("Permission " + decision + " successfully.");
+        response.getWriter().write("permission " + decision + " successfully.");
     }
 }

@@ -9,11 +9,11 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.stream.Collectors;
+import static constant.Constant.SPREADSHEET_MAP;
+import static constant.Constant.UPLOADER_MAP;
 
 @WebServlet("/getUploadedFiles")
 public class GetUploadedFilesServlet extends HttpServlet {
@@ -24,10 +24,10 @@ public class GetUploadedFilesServlet extends HttpServlet {
 
         // Retrieve the spreadsheet manager map (now storing SpreadsheetManager objects)
         Map<String, SpreadsheetManager> spreadsheetManagerMap =
-                (Map<String, SpreadsheetManager>) getServletContext().getAttribute("spreadsheetManagerMap");
+                (Map<String, SpreadsheetManager>) getServletContext().getAttribute(SPREADSHEET_MAP);
 
         // Retrieve the uploader map
-        Map<String, String> uploaderMap = (Map<String, String>) getServletContext().getAttribute("uploaderMap");
+        Map<String, String> uploaderMap = (Map<String, String>) getServletContext().getAttribute(UPLOADER_MAP);
 
         if (spreadsheetManagerMap == null || spreadsheetManagerMap.isEmpty()) {
             response.getWriter().write("{}");  // Return an empty JSON object if no files

@@ -7,7 +7,7 @@ import exception.RangeDoesNotExist;
 
 import java.util.Set;
 
-public class AVERAGE extends AbstractFunctioUtils{
+public class AVERAGE extends AbstractFunctionsUtils {
 
     private final Spreadsheet spreadsheet;
 

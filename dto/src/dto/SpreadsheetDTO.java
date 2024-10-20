@@ -1,27 +1,17 @@
 package dto;
-
-import cell.impl.CellImpl;
-import cell.impl.CellType;
 import exception.OutOfBoundsException;
-
 import java.util.*;
 
 public class SpreadsheetDTO {
-    private static final String OUT_OF_BOUNDS_ERROR = "Cell %s is out of bounds.";;
-
-
     private final String sheetName;
     private final List<CellDTO> cells;
     private final int rows;
     private final int columns;
     private final int columnWidthUnits;
     private final int rowsHeightUnits;
-    private Map<String, Set<String>> ranges = new HashMap<>();
+    private final Map<String, Set<String>> ranges;
 
-    public Map<String, Set<String>> getRanges() {
-        return ranges;
-    }
-
+    //ctor
     public SpreadsheetDTO(String sheetName, List<CellDTO> cells, int rows, int columns, int columnWidthUnits, int rowsHeightUnits, Map<String, Set<String>> ranges) {
         this.sheetName = sheetName;
         this.cells = cells;
@@ -30,6 +20,11 @@ public class SpreadsheetDTO {
         this.columnWidthUnits = columnWidthUnits;
         this.rowsHeightUnits = rowsHeightUnits;
         this.ranges = ranges != null ? ranges : new HashMap<>();
+    }
+
+    //getters
+    public Map<String, Set<String>> getRanges() {
+        return ranges;
     }
 
     public String getSheetName() {
@@ -51,6 +46,7 @@ public class SpreadsheetDTO {
     public int getRowHeight() {
         return rowsHeightUnits;
     }
+
     public int getColumnWidth() {
         return columnWidthUnits;
     }
@@ -73,32 +69,26 @@ public class SpreadsheetDTO {
         return "#FFFFFF"; // Default to white if no cell found
     }
 
-
     public Set<String> getAllRangeNames() {
         return ranges.keySet();
     }
 
-    // Add range
+    public Set<String> getCellsInRange(String rangeName) {
+        return ranges.getOrDefault(rangeName, new HashSet<>());
+    }
+
+    //Functions
     public void addRange(String rangeName, String fromCellId, String toCellId) {
-        Set<String> cellsInRange = new HashSet<>();
-        // Assuming you have a method to get all cells between two cell IDs
-        cellsInRange.addAll(calculateRangeCells(fromCellId, toCellId));
+        Set<String> cellsInRange = new HashSet<>(calculateRangeCells(fromCellId, toCellId));
         ranges.put(rangeName, cellsInRange);
     }
 
-    // Delete range
     public void removeRange(String rangeName) {
         ranges.remove(rangeName);
     }
 
-    // Check if range exists
     public boolean rangeExists(String rangeName) {
         return ranges.containsKey(rangeName);
-    }
-
-    // Get all cells in a range
-    public Set<String> getCellsInRange(String rangeName) {
-        return ranges.getOrDefault(rangeName, new HashSet<>());
     }
 
     public Set<String> calculateRangeCells(String fromCellId, String toCellId) {
@@ -152,20 +142,7 @@ public class SpreadsheetDTO {
     }
 
     private String generateCellId(int row, String column) {
-        // Assume column is already a letter (e.g., "A", "B", etc.)
         return column.toUpperCase() + row;
-    }
-
-
-    public CellDTO getCellDTO(String cellId) {
-        // Iterate through the list of cells to find the cell with the matching cellId
-        for (CellDTO cell : cells) {
-            if (cell.getCellId().equals(cellId)) {
-                return cell;
-            }
-        }
-        // Return an empty cell if not found
-        return new CellDTO(cellId, "", "EMPTY", CellType.EMPTY, 0, new ArrayList<>(), new ArrayList<>(), "black", "white");
     }
 
 }

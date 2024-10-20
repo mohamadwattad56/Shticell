@@ -1,29 +1,28 @@
 package servlets;
-
 import Spreadsheet.impl.SpreadsheetManager;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonObject;
 import dto.CellUpdateDTO;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-
 import java.io.IOException;
 import java.util.Map;
+import static constant.Constant.*;
+
 @WebServlet("/updateCellValue")
 public class UpdateCellValueServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
         // Get the query parameters from the request
-        String cellIdentifier = request.getParameter("cellIdentifier");
+        String cellIdentifier = request.getParameter(CELL_ID);
         String newValue = request.getParameter("newValue");
         String oldValue = request.getParameter("oldValue");
-        String sheetName = request.getParameter("sheetName");
+        String sheetName = request.getParameter(SHEET_NAME);
         String versionNumberStr = request.getParameter("versionNumber");
-        String userName = request.getParameter("userName");  // Retrieve the userName who made the change
+        String userName = request.getParameter(USERNAME);  // Retrieve the userName who made the change
 
         // Check if any required parameter is missing
         if (cellIdentifier == null || newValue == null || oldValue == null || sheetName == null || versionNumberStr == null || userName == null) {
@@ -44,7 +43,7 @@ public class UpdateCellValueServlet extends HttpServlet {
 
         // Retrieve the spreadsheet manager from ServletContext
         Map<String, SpreadsheetManager> spreadsheetManagerMap =
-                (Map<String, SpreadsheetManager>) getServletContext().getAttribute("spreadsheetManagerMap");
+                (Map<String, SpreadsheetManager>) getServletContext().getAttribute(SPREADSHEET_MAP);
 
         SpreadsheetManager spreadsheetManager = spreadsheetManagerMap.get(sheetName);
 
