@@ -147,15 +147,20 @@ public class CommandAndRangesController {
             confirmationDialog.setHeaderText("Are you sure you want to delete the range: " + selectedRange + "?");
 
             Optional<ButtonType> result = confirmationDialog.showAndWait();
-            if (result.isPresent() && result.get() == ButtonType.OK) {
-                boolean isDeleted = appController.getSpreadsheetController().getSpreadsheet().deleteRange(selectedRange);
-                if (isDeleted) {
-                    popupStage.close(); // Close the delete range popup
+            try{
+                if (result.isPresent() && result.get() == ButtonType.OK) {
+                    boolean isDeleted = appController.getSpreadsheetController().getSpreadsheet().deleteRange(selectedRange);
+                    if (isDeleted) {
+                        popupStage.close(); // Close the delete range popup
+                    } else {
+                        appController.showError("Error", "Could not delete the range.");
+                    }
                 } else {
-                    appController.showError("Error", "Could not delete the range.");
+                    confirmationDialog.close();
                 }
-            } else {
-                confirmationDialog.close();
+            }catch (Exception e)
+            {
+                appController.showError("Error", "Could not delete the range : " + e.getMessage());
             }
         });
 
@@ -639,7 +644,6 @@ public class CommandAndRangesController {
     }
 
     public void showColorPickerForCell(String cellId) {
-        // Create a new stage for the color picker
         Stage colorPickerStage = new Stage();
         colorPickerStage.setTitle("Set Cell Color for " + cellId);
 
@@ -648,40 +652,36 @@ public class CommandAndRangesController {
 
         // Text color picker
         Label textColorLabel = new Label("Select Text Color:");
-        ColorPicker textColorPicker = new ColorPicker(Color.BLACK); // Default color
+        ColorPicker textColorPicker = new ColorPicker(Color.BLACK);
 
         // Background color picker
         Label backgroundColorLabel = new Label("Select Background Color:");
-        ColorPicker backgroundColorPicker = new ColorPicker(Color.WHITE); // Default color
+        ColorPicker backgroundColorPicker = new ColorPicker(Color.WHITE);
 
-        // OK button to apply the colors
+        // Apply button to set the colors
         Button applyButton = new Button("Apply");
         applyButton.setOnAction(event -> {
-            Color textColor = textColorPicker.getValue();
-            Color backgroundColor = backgroundColorPicker.getValue();
+            String textColor = toHexCode(textColorPicker.getValue());
+            String backgroundColor = toHexCode(backgroundColorPicker.getValue());
 
-            // Apply colors to the cell
             appController.getSpreadsheetController().applyCellTextColor(cellId, textColor);
             appController.getSpreadsheetController().applyCellBackgroundColor(cellId, backgroundColor);
-
-            colorPickerStage.close(); // Close the color picker stage
+            colorPickerStage.close();
         });
 
-        // Cancel button
-        Button cancelButton = new Button("Cancel");
-        cancelButton.setOnAction(event -> colorPickerStage.close());
-
-        // Button layout
-        HBox buttonBox = new HBox(10, cancelButton, applyButton);
-        buttonBox.setAlignment(Pos.CENTER_RIGHT);
-
-        // Add components to the layout
-        layout.getChildren().addAll(textColorLabel, textColorPicker, backgroundColorLabel, backgroundColorPicker, buttonBox);
-
-        Scene scene = new Scene(layout, 400, 300);
-        colorPickerStage.setScene(scene);
+        // Layout and show the stage
+        layout.getChildren().addAll(textColorLabel, textColorPicker, backgroundColorLabel, backgroundColorPicker, new HBox(applyButton));
+        colorPickerStage.setScene(new Scene(layout, 400, 300));
         colorPickerStage.show();
     }
+
+    private String toHexCode(Color color) {
+        return String.format("#%02X%02X%02X",
+                (int) (color.getRed() * 255),
+                (int) (color.getGreen() * 255),
+                (int) (color.getBlue() * 255));
+    }
+
 
     private void showSortPopup() {
         Stage sortPopupStage = new Stage();
@@ -1148,8 +1148,8 @@ public class CommandAndRangesController {
 
                 // Retrieve the cell color information
                 CellDTO cellDTO = appController.getSpreadsheetController().getSpreadsheet().getCellDTO(cellId);
-                String textColor = cellDTO != null ? cellDTO.getTextColor() : "black";
-                String backgroundColor = cellDTO != null ? cellDTO.getBackgroundColor() : "white";
+                String textColor = cellDTO != null ? cellDTO.getTextColor() : "#000000";
+                String backgroundColor = cellDTO != null ? cellDTO.getBackgroundColor() : "#FFFFFF";
 
                 // Create label for each cell
                 Label cellLabel = new Label("");

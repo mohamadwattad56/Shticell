@@ -45,8 +45,8 @@ public class Spreadsheet implements Serializable,Cloneable {
 
         // Fetch the existing cell if it exists, so we can retain its colors
         CellImpl existingCell = cells.get(cellId);
-        String existingTextColor = (existingCell != null) ? existingCell.getTextColor() : "black";  // default to black
-        String existingBackgroundColor = (existingCell != null) ? existingCell.getBackgroundColor() : "white";  // default to white
+        String existingTextColor = (existingCell != null) ? existingCell.getTextColor() : "#000000";  // default to black
+        String existingBackgroundColor = (existingCell != null) ? existingCell.getBackgroundColor() : "#FFFFFF";  // default to white
 
         // Create a new cell based on the value
         CellImpl tempCell = createCellBasedOnValue(value);

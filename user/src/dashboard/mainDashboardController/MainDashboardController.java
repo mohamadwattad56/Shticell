@@ -186,7 +186,7 @@ public class MainDashboardController {
                 ).collect(Collectors.toList());
 
         // Ensure the owner is always in the list
-        DashboardTablesController.PermissionRowData ownerRow = new DashboardTablesController.PermissionRowData(uploaderName, "OWNER", "Approved");
+        DashboardTablesController.PermissionRowData ownerRow = new DashboardTablesController.PermissionRowData(uploaderName, "OWNER", "APPROVED");
         newDataList.addFirst(ownerRow);  // Add the owner to the beginning of the list
 
         // Compare the new data with the current data in the table

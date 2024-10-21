@@ -2,7 +2,6 @@
   <artifact type="jar" name="controller:jar">
     <output-path>$PROJECT_DIR$/out/artifacts/controller_jar</output-path>
     <root id="archive" name="controller.jar">
-      <element id="module-output" name="controller" />
       <element id="module-output" name="engine" />
       <element id="module-output" name="dto" />
       <element id="extracted-dir" path="$USER_HOME$/Desktop/jaxb-ri-4.0.5/mod/angus-activation.jar" path-in-jar="/" />

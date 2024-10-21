@@ -48,7 +48,7 @@ public class DashboardTablesController {
 
         private final String uploader;
         private final String sheetName;
-        private final String sheetSize;
+        private String sheetSize;
         private String permission;
         public SheetRowData(String uploader, String sheetName, String sheetSize, String permission) {
             this.uploader = uploader;
@@ -71,6 +71,13 @@ public class DashboardTablesController {
 
         public void setPermission(String permission) {
             this.permission = permission;
+        }
+
+        public void setSheetSize(String sheetSize) {
+            this.sheetSize = sheetSize;
+        }
+        public String getSheetSize() {
+            return sheetSize;
         }
     }
     // Data class for tableView2 (permissions)
@@ -147,10 +154,25 @@ public class DashboardTablesController {
     }
 
     public void addSheet(String uploader, String sheetName, String sheetSize) {
-        this.mainDashboardController.getDashboardCommandsController().fetchUserPermission(sheetName, this.mainDashboardController.getDashboardHeaderController().getDashUserName(), permission -> sheetData.add(new SheetRowData(uploader, sheetName, sheetSize, permission)));
+        // Check if the sheet already exists in the sheetData
+        boolean sheetExists = sheetData.stream()
+                .anyMatch(sheet -> sheet.getSheetName().equals(sheetName) && sheet.getUploader().equals(uploader));
 
-        tableView1.refresh();
+        // If the sheet does not exist, fetch the permission and add it to the table
+        if (!sheetExists) {
+            this.mainDashboardController.getDashboardCommandsController().fetchUserPermission(
+                    sheetName,
+                    this.mainDashboardController.getDashboardHeaderController().getDashUserName(),
+                    permission -> {
+                        sheetData.add(new SheetRowData(uploader, sheetName, sheetSize, permission));
+                        tableView1.refresh();
+                    }
+            );
+        } else {
+            System.out.println("Sheet already exists: " + sheetName);
+        }
     }
+
 
     public TableView<PermissionRowData> getTableView2()
     {

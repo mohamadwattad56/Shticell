@@ -141,9 +141,13 @@ public class appController {
         applyLabelStyles(labelClass);
         // Apply the correct CSS class to all cells
         applyCellStyles(cellClass);
+
+        getSpreadsheetController().getGridPane().requestLayout();  // This forces a re-layout of the grid
+
     }
 
     private void applyCellStyles(String cellClass) {
+        // Iterate over all the nodes in the grid (representing cells)
         for (Node node : this.getSpreadsheetController().getGridPane().getChildren()) {
             if (node instanceof Label && GridPane.getColumnIndex(node) != null && GridPane.getRowIndex(node) != null) {
                 int rowIndex = GridPane.getRowIndex(node);
@@ -168,18 +172,38 @@ public class appController {
                             case "dark-cell" -> cellLabel.setStyle("-fx-text-fill: white;");
                             case "colorful-cell" -> cellLabel.setStyle("-fx-text-fill: black;");
                         }
+                    } else {
+                        // Apply the current text color and background color if they aren't default
+                        cellLabel.setStyle(
+                                "-fx-text-fill: " + convertToValidHex(cell.getTextColor()) +
+                                        "; -fx-background-color: " + convertToValidHex(cell.getBackgroundColor()) + ";"
+                        );
                     }
                 }
             }
         }
     }
 
+    private String convertToValidHex(String color) {
+        if (color.equalsIgnoreCase("black") || color.equalsIgnoreCase("#000000")) {
+            return "black";
+        } else if (color.equalsIgnoreCase("white") || color.equalsIgnoreCase("#FFFFFF")) {
+            return "white";
+        } else {
+            // Ensure the color string starts with a #
+            if (!color.startsWith("#")) {
+                return "#" + color;
+            }
+            return color;
+        }
+    }
+
     private boolean isBlack(String color) {
-        return color.equalsIgnoreCase("black") || color.equalsIgnoreCase("#000000");
+        return color.equalsIgnoreCase("#000000");
     }
 
     private boolean isWhite(String color) {
-        return color.equalsIgnoreCase("white") || color.equalsIgnoreCase("#FFFFFF");
+        return color.equalsIgnoreCase("#FFFFFF");
     }
 
      private void applyButtonFadeIn(Button button) {

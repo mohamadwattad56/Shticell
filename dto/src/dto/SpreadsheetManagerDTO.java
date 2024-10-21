@@ -28,23 +28,26 @@ public class SpreadsheetManagerDTO {
     }
 
     //setters
-    public void setCellTextColor(String cellId, Color color) {
+    // Set the text color of the cell using a hex color string (e.g., "#000000")
+    public void setCellTextColor(String cellId, String hexColor) {
         // Find the matching cell in the DTO and update its text color
         for (CellDTO cell : spreadsheetDTO.getCells()) {
             if (cell.getCellId().equals(cellId)) {
-                cell.setTextColor(toRgbCode(color)); // Update the text color in the DTO
+                cell.setTextColor(hexColor); // Update the text color in the DTO
             }
         }
     }
 
-    public void setCellBackgroundColor(String cellId, Color color) {
+    // Set the background color of the cell using a hex color string (e.g., "#FFFFFF")
+    public void setCellBackgroundColor(String cellId, String hexColor) {
         // Find the matching cell in the DTO and update its background color
         for (CellDTO cell : spreadsheetDTO.getCells()) {
             if (cell.getCellId().equals(cellId)) {
-                cell.setBackgroundColor(toRgbCode(color)); // Update the background color in the DTO
+                cell.setBackgroundColor(hexColor); // Update the background color in the DTO
             }
         }
     }
+
 
     public void setCurrentUserName(String currentUserName) {
         this.currentUserName = currentUserName;
@@ -85,7 +88,7 @@ public class SpreadsheetManagerDTO {
                 return cell;
             }
         }
-        return new CellDTO(cellId, "", "EMPTY", CellType.EMPTY, 0, new ArrayList<>(), new ArrayList<>(), "black", "white");
+        return new CellDTO(cellId, "", "EMPTY", CellType.EMPTY, 0, new ArrayList<>(), new ArrayList<>(), "#000000", "#FFFFFF");
     }
 
     public int getNumOfRows() {

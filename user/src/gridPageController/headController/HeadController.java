@@ -29,6 +29,9 @@ import org.jetbrains.annotations.NotNull;
 
 public class HeadController {
 
+    private appController appController;
+
+
     @FXML
     private ComboBox<String> skinSelector;
     @FXML
@@ -47,6 +50,7 @@ public class HeadController {
     private Label modifiedBy;
     @FXML
     private Button backButton;
+
 
     @FXML
     private void initialize() {
@@ -70,6 +74,7 @@ public class HeadController {
         backButton.setOnAction(event -> handleBackButton());
 
     }
+
 
     @FXML
     private void handleBackButton() {
@@ -100,6 +105,74 @@ public class HeadController {
             appController.showError("Error", "Failed to navigate back to the dashboard.");
         }
     }
+
+
+    private void handleUpdateValue() {
+        String cellIdentifier = selectedCellIdField.getText();
+        String newValue = originalCellValueField.getText();
+        String oldValue = appController.getSpreadsheetController().getSpreadsheet().getCellDTO(cellIdentifier).getSourceValue().toString();
+
+        try {
+            // Call the updateCellValue method in SpreadsheetController and handle the future
+            appController.getSpreadsheetController()
+                    .updateCellValue(cellIdentifier, newValue, oldValue)
+                    .handle((result, ex) -> {
+                        if (ex != null) {
+                            // Handle the exception if present
+                            Platform.runLater(() -> appController.showError("Update Error", ex.getMessage()));
+                        } else {
+                            // Update UI only if the operation succeeded
+                            Platform.runLater(() -> {
+                                String tmp = "By user: " + appController.getMainDashboardController().getDashboardHeaderController().getDashUserName();
+                                lastUpdateCellVersionField.setText("Last update cell version: " + appController.getSpreadsheetController().getSpreadsheet().getCurrentVersion());
+                                modifiedBy.setText(tmp);
+                            });
+                        }
+                        return null;  // Return null since we don't need a result here
+                    });
+
+        } catch (Exception ignored) {
+
+        }
+    }
+
+
+    public Label getModifiedBy() {
+        return modifiedBy;
+    }
+
+    public void setMainController(appController appController) {
+        this.appController = appController;
+    }
+
+    public TextField getSelectedCellIdField(){
+        return selectedCellIdField;
+    }
+
+    public TextField getOriginalCellValueField(){
+        return originalCellValueField;
+    }
+
+    public Label getLastUpdateCellVersionField(){
+        return lastUpdateCellVersionField;
+    }
+
+    public void disableEditing() {
+
+        Platform.runLater(() -> {
+            if (originalCellValueField != null && updateValueButton != null) {
+                originalCellValueField.setEditable(false);  // Make the field non-editable but still visible
+                updateValueButton.setDisable(true);  // Disable the update button
+            } else {
+                System.out.println("Fields are null, check initialization!");
+            }
+        });
+    }
+
+
+
+
+
 
     @FXML
     private void handleVersionSelector() {
@@ -143,70 +216,6 @@ public class HeadController {
             System.out.println("Error encoding URL: " + e.getMessage());
         }
     }
-
-    private appController appController;
-
-    private void handleUpdateValue() {
-        String cellIdentifier = selectedCellIdField.getText();
-        String newValue = originalCellValueField.getText();
-        String oldValue = appController.getSpreadsheetController().getSpreadsheet().getCellDTO(cellIdentifier).getSourceValue().toString();
-
-        try {
-            // Call the updateCellValue method in SpreadsheetController and handle the future
-            appController.getSpreadsheetController()
-                    .updateCellValue(cellIdentifier, newValue, oldValue)
-                    .handle((result, ex) -> {
-                        if (ex != null) {
-                            // Handle the exception if present
-                            Platform.runLater(() -> appController.showError("Update Error", ex.getMessage()));
-                        } else {
-                            // Update UI only if the operation succeeded
-                            Platform.runLater(() -> {
-                                String tmp = "By user: " + appController.getMainDashboardController().getDashboardHeaderController().getDashUserName();
-                                lastUpdateCellVersionField.setText("Last update cell version: " + appController.getSpreadsheetController().getSpreadsheet().getCurrentVersion());
-                                modifiedBy.setText(tmp);
-                            });
-                        }
-                        return null;  // Return null since we don't need a result here
-                    });
-
-        } catch (Exception ignored) {
-
-        }
-    }
-
-    public Label getModifiedBy() {
-        return modifiedBy;
-    }
-
-    public void setMainController(appController appController) {
-        this.appController = appController;
-    }
-
-    public TextField getSelectedCellIdField(){
-        return selectedCellIdField;
-    }
-
-    public TextField getOriginalCellValueField(){
-        return originalCellValueField;
-    }
-
-    public Label getLastUpdateCellVersionField(){
-        return lastUpdateCellVersionField;
-    }
-
-    public void disableEditing() {
-
-        Platform.runLater(() -> {
-            if (originalCellValueField != null && updateValueButton != null) {
-                originalCellValueField.setEditable(false);  // Make the field non-editable but still visible
-                updateValueButton.setDisable(true);  // Disable the update button
-            } else {
-                System.out.println("Fields are null, check initialization!");
-            }
-        });
-    }
-
     private void showVersionSelectorPopup(List<String> versionHistory) {
         Stage versionPopup = new Stage();
         versionPopup.setTitle("Select Version");
@@ -253,6 +262,7 @@ public class HeadController {
         versionPopup.showAndWait();
     }
 
+
     private void loadVersionFromServer(int versionNumber) {
         OkHttpClient client = new OkHttpClient();
 
@@ -292,6 +302,7 @@ public class HeadController {
             System.out.println("Error encoding URL: " + e.getMessage());
         }
     }
+
 
     public void showNewVersionIndicator(int latestVersion) {
         // Make the button visible
@@ -346,6 +357,16 @@ public class HeadController {
         });
     }
 
+
+
+
+
+
+
+
+
+
+    // Helper method to extract version number from the version string
     private int extractVersionNumber(String versionText) {
         // Assuming the format is "Version X: ..." (for example, "Version 5: 3 cells changed.")
         String[] parts = versionText.split(" ");
@@ -357,6 +378,7 @@ public class HeadController {
         return Integer.parseInt(versionNumber);  // Convert the cleaned version number to integer
     }
 
+    // Method to display the selected version of the spreadsheet in a read-only grid
     private void showVersionSpreadsheet(VersionDTO versionDTO) {
         Stage popupStage = new Stage();
         popupStage.setTitle("Version " + versionDTO.getVersionNumber());
@@ -452,6 +474,7 @@ public class HeadController {
         popupStage.showAndWait();
     }
 
+    // Helper methods to extract row and column from cellId
     private int extractRow(String cellId) {
         return Integer.parseInt(cellId.replaceAll("[^0-9]", ""));
     }
@@ -459,4 +482,6 @@ public class HeadController {
     private int extractCol(String cellId) {
         return cellId.replaceAll("[0-9]", "").charAt(0) - 'A' + 1;
     }
+
+
 }

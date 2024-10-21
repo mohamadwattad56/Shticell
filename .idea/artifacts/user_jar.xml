@@ -26,7 +26,6 @@
       <element id="extracted-dir" path="$USER_HOME$/Desktop/okhttp/kotlin-stdlib-1.4.10.jar" path-in-jar="/" />
       <element id="extracted-dir" path="$USER_HOME$/Desktop/okhttp/okhttp-4.9.1.jar" path-in-jar="/" />
       <element id="extracted-dir" path="$USER_HOME$/Desktop/okhttp/okio-2.8.0.jar" path-in-jar="/" />
-      <element id="library" level="project" name="apache-tomcat-10.1" />
       <element id="library" level="project" name="jaxb-ri-4.0" />
       <element id="extracted-dir" path="$USER_HOME$/Desktop/GSON/gson-2.1.jar" path-in-jar="/" />
       <element id="extracted-dir" path="$PROJECT_DIR$/lib/javax.annotation.jar" path-in-jar="/" />

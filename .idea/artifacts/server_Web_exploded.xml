@@ -7,7 +7,6 @@
         <element id="directory" name="classes">
           <element id="module-output" name="server" />
           <element id="module-output" name="user" />
-          <element id="module-output" name="controller" />
           <element id="module-output" name="engine" />
           <element id="module-output" name="dto" />
         </element>
@@ -16,6 +15,8 @@
           <element id="library" level="project" name="jaxb-ri-4.0" />
           <element id="library" level="project" name="mod" />
           <element id="library" level="project" name="javafx-sdk-22.0" />
+          <element id="library" level="project" name="annotations-13.0" />
+          <element id="library" level="project" name="Java EE 6-Java EE 6" />
         </element>
       </element>
     </root>
