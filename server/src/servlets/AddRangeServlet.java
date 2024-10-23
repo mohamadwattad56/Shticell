@@ -28,14 +28,15 @@ public class AddRangeServlet extends HttpServlet {
 
         // Retrieve spreadsheet manager (from the session or context)
         Map<String, SpreadsheetManager> spreadsheetManagerMap = (Map<String, SpreadsheetManager>) getServletContext().getAttribute("spreadsheetManagerMap");
-        SpreadsheetManager spreadsheetManager = spreadsheetManagerMap.get(sheetName);  // Adjust as needed
-
-        boolean added = spreadsheetManager.addRange(rangeName, fromCellId, toCellId);
-        if (added) {
-            response.setStatus(HttpServletResponse.SC_OK);
-            response.getWriter().write("Range added successfully");
-        } else {
-            response.sendError(HttpServletResponse.SC_CONFLICT, "Range name already exists");
+        SpreadsheetManager spreadsheetManager = spreadsheetManagerMap.get(sheetName);  // Adjust as needed\
+        synchronized (spreadsheetManager) {
+            boolean added = spreadsheetManager.addRange(rangeName, fromCellId, toCellId);
+            if (added) {
+                response.setStatus(HttpServletResponse.SC_OK);
+                response.getWriter().write("Range added successfully");
+            } else {
+                response.sendError(HttpServletResponse.SC_CONFLICT, "Range name already exists");
+            }
         }
     }
 }

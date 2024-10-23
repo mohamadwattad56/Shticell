@@ -28,16 +28,18 @@ public class DeleteRangeServlet extends HttpServlet {
         Map<String, SpreadsheetManager> spreadsheetManagerMap = (Map<String, SpreadsheetManager>) getServletContext().getAttribute(SPREADSHEET_MAP);
         SpreadsheetManager spreadsheetManager = spreadsheetManagerMap.get(sheetName);  // Adjust as needed
 
-        try{
-            boolean deleted = spreadsheetManager.deleteRange(rangeName);
-            if (deleted) {
-                response.setStatus(HttpServletResponse.SC_OK);
-                response.getWriter().write("Range deleted successfully");
-            } else {
-                response.sendError(HttpServletResponse.SC_NOT_FOUND, "Range not found");
+        synchronized (spreadsheetManager){
+            try {
+                boolean deleted = spreadsheetManager.deleteRange(rangeName);
+                if (deleted) {
+                    response.setStatus(HttpServletResponse.SC_OK);
+                    response.getWriter().write("Range deleted successfully");
+                } else {
+                    response.sendError(HttpServletResponse.SC_NOT_FOUND, "Range not found");
+                }
+            } catch (Exception e) {
+                response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
             }
-        }catch (Exception e){
-            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
         }
     }
 }

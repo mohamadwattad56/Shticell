@@ -30,34 +30,34 @@ public class RequestPermissionServlet extends HttpServlet {
                 (Map<String, SpreadsheetManager>) getServletContext().getAttribute(SPREADSHEET_MAP);
 
         SpreadsheetManager spreadsheetManager = spreadsheetManagerMap.get(sheetName);
-
         if (spreadsheetManager == null) {
             response.sendError(HttpServletResponse.SC_NOT_FOUND, "Spreadsheet not found");
             return;
         }
+        synchronized (spreadsheetManager) {
+            // Check if the user already has permission
+            boolean alreadyHasPermission = spreadsheetManager.getProcessedRequests().stream()
+                    .anyMatch(req -> req.getUsername().equals(username) && req.getPermissionType().equalsIgnoreCase(permissionType));
 
-        // Check if the user already has permission
-        boolean alreadyHasPermission = spreadsheetManager.getProcessedRequests().stream()
-                .anyMatch(req -> req.getUsername().equals(username) && req.getPermissionType().equalsIgnoreCase(permissionType));
+            if (alreadyHasPermission) {
+                response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Owner already Approved/Denied requested permission.");
+                return;
+            }
 
-        if (alreadyHasPermission) {
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Owner already Approved/Denied requested permission.");
-            return;
+            boolean requestIsPending = spreadsheetManager.getPendingRequests().stream()
+                    .anyMatch(req -> req.getUsername().equals(username) && req.getPermissionType().equalsIgnoreCase(permissionType));
+
+            if (requestIsPending) {
+                response.sendError(HttpServletResponse.SC_BAD_REQUEST, "User already requested permission.");
+                return;
+            }
+
+            // Create a new pending permission request and add it to the spreadsheet manager
+            PermissionRequestDTO requestDTO = new PermissionRequestDTO(username, permissionType, PermissionRequestDTO.RequestStatus.PENDING, spreadsheetManager.getSpreadsheetName());
+            spreadsheetManager.addPendingRequest(requestDTO);
+
+            response.setStatus(HttpServletResponse.SC_OK);
+            response.getWriter().write("Permission request submitted.");
         }
-
-        boolean requestIsPending = spreadsheetManager.getPendingRequests().stream()
-                .anyMatch(req -> req.getUsername().equals(username) && req.getPermissionType().equalsIgnoreCase(permissionType));
-
-        if (requestIsPending) {
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "User already requested permission.");
-            return;
-        }
-
-        // Create a new pending permission request and add it to the spreadsheet manager
-        PermissionRequestDTO requestDTO = new PermissionRequestDTO(username, permissionType, PermissionRequestDTO.RequestStatus.PENDING, spreadsheetManager.getSpreadsheetName());
-        spreadsheetManager.addPendingRequest(requestDTO);
-
-        response.setStatus(HttpServletResponse.SC_OK);
-        response.getWriter().write("Permission request submitted.");
     }
 }

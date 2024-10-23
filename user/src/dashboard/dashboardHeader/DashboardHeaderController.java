@@ -20,7 +20,11 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import static httputils.Constants.UPLOAD_FILE;
+import static httputils.Constants.UPLOAD_URL;
 
 public class DashboardHeaderController {
 
@@ -38,7 +42,8 @@ public class DashboardHeaderController {
 
     private MainDashboardController mainDashboardController;  // Reference to MainDashboardController
 
-    private static final String UPLOAD_URL = "http://localhost:8080/server_Web/uploadFile";  // Your upload servlet URL
+    private boolean isFetchingFiles = false;  // Flag to prevent concurrent fetches
+
 
     public void initialize() {
         loadFileButton.setOnAction(event -> handleLoadFile());
@@ -51,6 +56,13 @@ public class DashboardHeaderController {
     }
 
     private void fetchUploadedFiles() {
+        // Prevent multiple concurrent fetches
+        if (isFetchingFiles) {
+            return;
+        }
+
+        isFetchingFiles = true;  // Set the flag to indicate a fetch is in progress
+
         OkHttpClient client = new OkHttpClient();
 
         Request request = new Request.Builder()
@@ -61,66 +73,72 @@ public class DashboardHeaderController {
         client.newCall(request).enqueue(new Callback() {
             @Override
             public void onFailure(@NotNull Call call, @NotNull IOException e) {
+                isFetchingFiles = false;  // Reset flag on failure
                 Platform.runLater(() -> System.out.println("Failed to fetch uploaded files: " + e.getMessage()));
             }
 
             @Override
             public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
+                isFetchingFiles = false;  // Reset flag on success
+
                 assert response.body() != null;
                 String responseData = response.body().string();
+
                 Platform.runLater(() -> {
-                    Gson gson = new Gson();
+                    try {
+                        Gson gson = new Gson();
 
-                    // Save currently selected row
-                    DashboardTablesController.SheetRowData selectedRow = mainDashboardController.getDashboardTablesController().getSelectedSheet();
-                    String selectedSheetName = selectedRow != null ? selectedRow.getSheetName() : null;
+                        // Save the currently selected row
+                        DashboardTablesController.SheetRowData selectedRow = mainDashboardController.getDashboardTablesController().getSelectedSheet();
+                        String selectedSheetName = selectedRow != null ? selectedRow.getSheetName() : null;
 
-                    // Convert the response to a map of sheet name -> SpreadsheetManagerDTO
-                    Type type = new TypeToken<Map<String, SpreadsheetManagerDTO>>() {}.getType();
-                    Map<String, SpreadsheetManagerDTO> spreadsheetManagerMap = gson.fromJson(responseData, type);
+                        // Convert the response to a map of sheet name -> SpreadsheetManagerDTO
+                        Type type = new TypeToken<Map<String, SpreadsheetManagerDTO>>() {}.getType();
+                        Map<String, SpreadsheetManagerDTO> spreadsheetManagerMap = gson.fromJson(responseData, type);
 
-                    if (spreadsheetManagerMap.isEmpty()) {
-                        return;
-                    }
+                        if (spreadsheetManagerMap.isEmpty()) {
+                            return;  // No data to process
+                        }
 
-                    // Check if there are actual changes in the data
-                    ObservableList<DashboardTablesController.SheetRowData> currentData = mainDashboardController.getDashboardTablesController().getSheetData();
-                    boolean hasChanges = false;
+                        // Get the current data in the table
+                        ObservableList<DashboardTablesController.SheetRowData> currentData = mainDashboardController.getDashboardTablesController().getSheetData();
 
-                    // Compare current data with the new data
-                    for (SpreadsheetManagerDTO dto : spreadsheetManagerMap.values()) {
-                        String sheetName = dto.getSpreadsheetDTO().getSheetName();
-                        String uploader = dto.getUploaderName();  // Assuming you added this field to SpreadsheetManagerDTO
-                        String sheetSize = dto.getSpreadsheetDTO().getRows() + "x" + dto.getSpreadsheetDTO().getColumns();
+                        // Create a set to track existing sheet names
+                        Set<String> existingSheetNames = currentData.stream()
+                                .map(DashboardTablesController.SheetRowData::getSheetName)
+                                .collect(Collectors.toSet());
 
-                        // Check if the sheet already exists in the current data
-                        boolean found = false;
-                        for (DashboardTablesController.SheetRowData existingRow : currentData) {
-                            if (existingRow.getSheetName().equals(sheetName)) {
-                                found = true;
-                                break;
+                        boolean hasChanges = false;  // Flag to detect any changes
+                        for (SpreadsheetManagerDTO dto : spreadsheetManagerMap.values()) {
+                            String sheetName = dto.getSpreadsheetDTO().getSheetName();
+                            String uploader = dto.getUploaderName();  // Assuming you added this field to SpreadsheetManagerDTO
+                            String sheetSize = dto.getSpreadsheetDTO().getRows() + "x" + dto.getSpreadsheetDTO().getColumns();
+
+                            // Check if the sheet already exists in the current data
+                            if (!existingSheetNames.contains(sheetName)) {
+                                hasChanges = true;
+                                mainDashboardController.getDashboardTablesController().addSheet(uploader, sheetName, sheetSize);
+                                existingSheetNames.add(sheetName);  // Add the new sheet to the set to avoid duplicates
                             }
                         }
 
-                        if (!found) {
-                            hasChanges = true;
-                            mainDashboardController.getDashboardTablesController().addSheet(uploader, sheetName, sheetSize);
+                        // If no changes were detected, skip the refresh
+                        if (!hasChanges) {
+                            return;
                         }
-                    }
 
-                    // If no changes were detected, skip the refresh
-                    if (!hasChanges) {
-                        return;
-                    }
-
-                    // Restore the selection after refreshing the table
-                    if (selectedSheetName != null) {
-                        mainDashboardController.getDashboardTablesController().selectSheetByName(selectedSheetName);
+                        // Restore the selection after refreshing the table
+                        if (selectedSheetName != null) {
+                            mainDashboardController.getDashboardTablesController().selectSheetByName(selectedSheetName);
+                        }
+                    } catch (Exception e) {
+                        System.out.println("Error processing uploaded files: " + e.getMessage());
                     }
                 });
             }
         });
     }
+
 
     private void handleLoadFile() {
         FileChooser fileChooser = new FileChooser();

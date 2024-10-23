@@ -36,6 +36,7 @@ public class Constants {
     public static final String PERMISSION_ACK = FULL_SERVER_PATH + "/acknowledgePermission";
     public static final String GET_PERMISSIONS = FULL_SERVER_PATH + "/getAllPermissions";
     public static final String CELL_UPDATE = FULL_SERVER_PATH + "/updateCellValue";
+    public static final String UPLOAD_URL = FULL_SERVER_PATH + "/uploadFile";  // Your upload servlet URL
 
     // GSON instance for JSON parsing
     public static final Gson GSON_INSTANCE = new Gson();

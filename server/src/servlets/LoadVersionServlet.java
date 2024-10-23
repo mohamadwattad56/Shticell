@@ -50,8 +50,11 @@ public class LoadVersionServlet extends HttpServlet {
 
         // Fetch the specific spreadsheet manager
         SpreadsheetManager spreadsheetManager = spreadsheetManagerMap.get(sheetName);
-
-        if (spreadsheetManager != null) {
+        if (spreadsheetManager == null) {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND, "Spreadsheet not found");
+            return;
+        }
+        synchronized (spreadsheetManager) {
             // Get the specific version from the spreadsheet manager
             VersionDTO versionDTO = spreadsheetManager.getVersionDTO(versionNumber);
 
@@ -66,9 +69,7 @@ public class LoadVersionServlet extends HttpServlet {
                 response.setStatus(HttpServletResponse.SC_NOT_FOUND);
                 response.getWriter().write("Version not found for the spreadsheet.");
             }
-        } else {
-            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
-            response.getWriter().write("Spreadsheet not found.");
         }
     }
 }
+

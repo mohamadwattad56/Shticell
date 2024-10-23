@@ -1,4 +1,5 @@
 package servlets;
+
 import Spreadsheet.impl.SpreadsheetManager;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -7,8 +8,10 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 import java.util.Map;
+
 import static constant.Constant.*;
 
 @WebServlet("/updateCellValue")
@@ -48,36 +51,40 @@ public class UpdateCellValueServlet extends HttpServlet {
         SpreadsheetManager spreadsheetManager = spreadsheetManagerMap.get(sheetName);
 
         if (spreadsheetManager != null) {
-            int latestVersion = spreadsheetManager.getCurrentVersion();
+            // Synchronize on the spreadsheetManager to prevent concurrent modifications
+            synchronized (spreadsheetManager) {
+                int latestVersion = spreadsheetManager.getCurrentVersion();
 
-            // Check if the user's version is outdated
-            if (userVersion < latestVersion) {
-                // Version conflict, reject the update
-                response.setStatus(HttpServletResponse.SC_CONFLICT);
-                response.getWriter().write("Version conflict: Please update to the latest version before editing.");
-                return;
-            }
+                // Check if the user's version is outdated
+                if (userVersion < latestVersion) {
+                    // Version conflict, reject the update
+                    response.setStatus(HttpServletResponse.SC_CONFLICT);
+                    response.getWriter().write("Version conflict: Please update to the latest version before editing.");
+                    return;
+                }
 
-            try {
-                // Update the cell value and pass the current user who made the change
-                spreadsheetManager.updateCellValue(cellIdentifier, newValue, oldValue, userName, true);
+                try {
+                    // Update the cell value and pass the current user who made the change
+                    spreadsheetManager.updateCellValue(cellIdentifier, newValue, oldValue, userName, true);
 
-                spreadsheetManager.setLastModifiedBy(cellIdentifier,userName);
-                // Generate the updated cell DTO with the last modified user
-                CellUpdateDTO cellUpdateDTO = spreadsheetManager.generateCellUpdateDTO(cellIdentifier, userName);
+                    spreadsheetManager.setLastModifiedBy(cellIdentifier, userName);
 
-                // Convert response to JSON and send it back to the client
-                Gson gson = new GsonBuilder()
-                        .serializeSpecialFloatingPointValues() // This allows NaN and other special values
-                        .create();
+                    // Generate the updated cell DTO with the last modified user
+                    CellUpdateDTO cellUpdateDTO = spreadsheetManager.generateCellUpdateDTO(cellIdentifier, userName);
 
-                String jsonResponse = gson.toJson(cellUpdateDTO);
-                response.setContentType("application/json");
-                response.getWriter().write(jsonResponse);
+                    // Convert response to JSON and send it back to the client
+                    Gson gson = new GsonBuilder()
+                            .serializeSpecialFloatingPointValues() // This allows NaN and other special values
+                            .create();
 
-            } catch (Exception e) {
-                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-                response.getWriter().write("Error: " + e.getMessage());
+                    String jsonResponse = gson.toJson(cellUpdateDTO);
+                    response.setContentType("application/json");
+                    response.getWriter().write(jsonResponse);
+
+                } catch (Exception e) {
+                    response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                    response.getWriter().write("Error: " + e.getMessage());
+                }
             }
         } else {
             response.setStatus(HttpServletResponse.SC_NOT_FOUND);
