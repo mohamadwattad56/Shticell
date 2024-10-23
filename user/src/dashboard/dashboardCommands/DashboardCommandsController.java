@@ -29,6 +29,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import static constant.Constant.SHEET_NAME;
 import static constant.Constant.USERNAME;
+import static httputils.Constants.REQUEST_PERMISSION;
 
 
 public class DashboardCommandsController {
@@ -48,6 +49,10 @@ public class DashboardCommandsController {
     @FXML
     private Button chatButton;
 
+
+    public Button getAcknowledgePermissionButton(){
+        return acknowledgePermissionButton;
+    }
 
     @FXML
     public void initialize() {
@@ -136,8 +141,6 @@ public class DashboardCommandsController {
 
     private void requestPermission(String sheetName, String requestedPermission, String uploaderName) {
         OkHttpClient client = new OkHttpClient();
-        String url = "http://localhost:8080/server_Web/requestPermission";
-
         RequestBody requestBody = new FormBody.Builder()
                 .add(SHEET_NAME, sheetName)
                 .add(USERNAME, this.mainDashboardController.getDashboardHeaderController().getDashUserName())  // The user requesting access
@@ -145,7 +148,7 @@ public class DashboardCommandsController {
                 .build();
 
         Request request = new Request.Builder()
-                .url(url)
+                .url(REQUEST_PERMISSION)
                 .post(requestBody)
                 .build();
 
@@ -169,7 +172,6 @@ public class DashboardCommandsController {
         });
     }
 
-
     public void fetchUserPermission(String sheetName, String username, Consumer<String> callback) {
         OkHttpClient client = new OkHttpClient();
         String url = "http://localhost:8080/server_Web/getUserPermission?sheetName=" + sheetName + "&username=" + username;
@@ -191,8 +193,6 @@ public class DashboardCommandsController {
             }
         });
     }
-
-
 
     private void handleRequestPermission() {
 
@@ -240,9 +240,6 @@ public class DashboardCommandsController {
         }
     }
 
-
-
-
     private void fetchPendingRequests(String sheetName) {
         OkHttpClient client = new OkHttpClient();
         String url = "http://localhost:8080/server_Web/getPendingRequests?sheetName=" + sheetName;
@@ -271,9 +268,6 @@ public class DashboardCommandsController {
             }
         });
     }
-
-
-
 
     private void showPendingRequestsPopup(List<PermissionRequestDTO> pendingRequests, String sheetName) {
         TableView<DashboardTablesController.PermissionRowData> requestTable = new TableView<>();
@@ -347,11 +341,6 @@ public class DashboardCommandsController {
         return new PermissionRequestDTO(rowData.getUserName(), rowData.getPermissionType(), isApproved, sheetName);
     }
 
-
-
-
-
-
     private void handlePermissionApproval(PermissionRequestDTO request, String decision, TableView<DashboardTablesController.PermissionRowData> requestTable) {
         OkHttpClient client = new OkHttpClient();
         String url = "http://localhost:8080/server_Web/acknowledgePermission";
@@ -396,8 +385,6 @@ public class DashboardCommandsController {
         });
     }
 
-
-
     private void showSuccessHint(String message) {
         // Show a label with the success message
         Label successLabel = new Label(message);
@@ -416,7 +403,6 @@ public class DashboardCommandsController {
         fadeTransition.play();
     }
 
-
     public void setMainController(MainDashboardController mainController) {
         this.mainDashboardController = mainController;
     }
@@ -424,4 +410,6 @@ public class DashboardCommandsController {
     public void setChatAppMainController(ChatAppMainController chatAppMainController) {
         this.chatAppMainController = chatAppMainController; // Set the chat app controller
     }
+
+
 }

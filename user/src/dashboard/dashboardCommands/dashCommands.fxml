@@ -2,6 +2,7 @@
 
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.StackPane?>
 
 <VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0"
       prefWidth="191.0" xmlns="http://javafx.com/javafx/23" xmlns:fx="http://javafx.com/fxml/1"
@@ -12,9 +13,11 @@
     <!-- Request permission Button -->
     <Button fx:id="requestPermissionButton" text="Request permission" prefHeight="100.0" prefWidth="198.0"/>
 
-    <!-- Acknowledge/Deny permission Request Button -->
-    <Button fx:id="acknowledgePermissionButton" text="Acknowledge/Deny permission" prefHeight="100.0"
-            prefWidth="198.0"/>
+    <!-- Acknowledge/Deny permission Request Button wrapped inside a StackPane -->
+    <StackPane>
+        <Button fx:id="acknowledgePermissionButton" text="Acknowledge/Deny permission" prefHeight="100.0"
+                prefWidth="198.0"/>
+    </StackPane>
 
     <!-- Chat Button -->
     <Button fx:id="chatButton" text="Chat" prefHeight="100.0" prefWidth="198.0"/>

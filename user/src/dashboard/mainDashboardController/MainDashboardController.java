@@ -8,6 +8,8 @@ import dto.SpreadsheetManagerDTO;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.geometry.Pos;
+import javafx.scene.control.Button;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
@@ -15,8 +17,10 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.layout.StackPane;
+import javafx.scene.shape.Circle;
 import okhttp3.*;
 import gridPageController.mainController.appController;
+
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
@@ -30,6 +34,7 @@ import javafx.util.Duration;
 import org.jetbrains.annotations.NotNull;
 
 import static httputils.Constants.*;
+import static javafx.scene.paint.Color.RED;
 
 public class MainDashboardController {
 
@@ -109,8 +114,103 @@ public class MainDashboardController {
     }
 
     public void handleSheetSelection(String sheetName, String uploader) throws UnsupportedEncodingException {
-        // Initialize or restart the periodic fetch
         startPeriodicFetch(sheetName, uploader);
+    }
+
+    public void checkPendingPermissions(String sheetName, String uploader) throws UnsupportedEncodingException {
+        // Create HTTP request to fetch pending requests
+        OkHttpClient client = new OkHttpClient();
+        String url = "http://localhost:8080/server_Web/getPendingRequests?sheetName=" + URLEncoder.encode(sheetName, "UTF-8");
+
+        Request request = new Request.Builder()
+                .url(url)
+                .get()
+                .build();
+
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                Platform.runLater(() -> {
+                    System.out.println("Error fetching pending requests: " + e.getMessage());
+                });
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                String responseData = response.body().string();
+
+                // Parse the response JSON to get the pending requests
+                Gson gson = new Gson();
+                PermissionRequestDTO[] pendingRequests = gson.fromJson(responseData, PermissionRequestDTO[].class);
+
+                // Update the UI based on the number of pending requests
+                Platform.runLater(() -> {
+                    if (pendingRequests.length > 0) {
+                        showNotificationOnAcknowledgeButton(pendingRequests.length,uploader);  // Pass the number of pending requests
+                    } else {
+                        hideNotificationOnAcknowledgeButton();  // Hide red circle if there are no pending requests
+                    }
+                });
+            }
+        });
+    }
+
+    private void showNotificationOnAcknowledgeButton(int pendingRequestsCount, String uploader) {
+        Button acknowledgePermissionButton = this.appController.getMainDashboardController()
+                .dashboardCommandsController.getAcknowledgePermissionButton();
+
+        StackPane parentStackPane = (StackPane) acknowledgePermissionButton.getParent();
+
+        // Check if the notification (circle) is already present to avoid duplicating
+        boolean notificationExists = parentStackPane.getChildren().stream()
+                .anyMatch(node -> node instanceof StackPane && ((StackPane) node).getChildren().stream().anyMatch(child -> child instanceof Circle));
+
+        if (!notificationExists && this.getDashboardHeaderController().getDashUserName().equals(uploader)) {
+            Circle redCircle = new Circle(10, RED);
+            redCircle.setStyle("-fx-fill: red;");
+
+            // Create a label to show the number of pending requests inside the circle
+            javafx.scene.control.Label countLabel = new javafx.scene.control.Label(String.valueOf(pendingRequestsCount));
+            countLabel.setStyle("-fx-text-fill: white; -fx-font-size: 10px; -fx-font-weight: bold;");
+
+            // Stack the label on top of the circle
+            StackPane notificationPane = new StackPane(redCircle, countLabel);
+            notificationPane.setMaxSize(20, 20);  // Set max size for the circle + number
+
+            // Add the notification pane to the button's parent StackPane
+            parentStackPane.getChildren().add(notificationPane);
+
+            // Align the notification at the top-left corner of the button, partially outside
+            StackPane.setAlignment(notificationPane, Pos.TOP_LEFT);
+            StackPane.setMargin(notificationPane, new
+                    javafx.geometry.Insets(-5, 0, 0, -5)); // Adjust position to overlap out of the button
+        } else {
+            // If the notification already exists, just update the number
+            StackPane notificationPane = (StackPane) parentStackPane.getChildren().stream()
+                    .filter(node -> node instanceof StackPane && ((StackPane) node).getChildren().stream().anyMatch(child -> child instanceof Circle))
+                    .findFirst().orElse(null);
+
+            if (notificationPane != null) {
+                javafx. scene. control.Label countLabel = (javafx. scene. control.Label) notificationPane.getChildren().stream().filter(child -> child instanceof javafx. scene. control.Label).findFirst().orElse(null);
+                if (countLabel != null) {
+                    countLabel.setText(String.valueOf(pendingRequestsCount));
+                }
+            }
+        }
+    }
+
+    // Hide the notification indicator (both circle and number)
+    private void hideNotificationOnAcknowledgeButton() {
+        Button acknowledgePermissionButton = this.appController.getMainDashboardController()
+                .dashboardCommandsController.getAcknowledgePermissionButton();
+
+        StackPane parentStackPane = (StackPane) acknowledgePermissionButton.getParent();
+
+        // Find and remove the notification pane (containing the circle and the number label)
+        parentStackPane.getChildren().removeIf(node ->
+                node instanceof StackPane &&
+                        ((StackPane) node).getChildren().stream().anyMatch(child -> child instanceof Circle)
+        );
     }
 
     private void startPeriodicFetch(String sheetName, String uploaderName) {
@@ -120,7 +220,14 @@ public class MainDashboardController {
         }
 
         // Create a new timeline to fetch data every 200ms
-        fetchTimeline = new Timeline(new KeyFrame(Duration.millis(200), event -> fetchSheetPermissions(sheetName, uploaderName)));
+        fetchTimeline = new Timeline(new KeyFrame(Duration.millis(200), event -> {
+            fetchSheetPermissions(sheetName, uploaderName);  // Fetch sheet permissions
+            try {
+                checkPendingPermissions(sheetName, uploaderName);  // Check for pending permissions
+            } catch (UnsupportedEncodingException e) {
+                e.printStackTrace();
+            }
+        }));
 
         fetchTimeline.setCycleCount(Timeline.INDEFINITE);  // Run indefinitely
         fetchTimeline.play();  // Start fetching
@@ -220,21 +327,6 @@ public class MainDashboardController {
         }
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     public void loadSheetFromServer(String sheetName, String uploaderName, String userPermission) throws UnsupportedEncodingException {
         OkHttpClient client = new OkHttpClient();
         String userName = this.dashboardHeaderController.getDashUserName();
@@ -274,52 +366,6 @@ public class MainDashboardController {
         });
     }
 
-
-
-
-
-    /*private void displaySheet(SpreadsheetManagerDTO spreadsheetManagerDTO, String userPermission) {
-        try {
-            System.out.println("Displaying sheet: " + spreadsheetManagerDTO.getSpreadsheetDTO().getSheetName());
-
-            // Create a new stage to display the sheet in a separate window
-            Stage sheetStage = new Stage();
-            sheetStage.setTitle("View Sheet: " + spreadsheetManagerDTO.getSpreadsheetDTO().getSheetName());
-
-            // Load the appController layout (MainLayout.fxml)
-            FXMLLoader appLoader = new FXMLLoader(getClass().getResource("/gridPageController/mainController/MainLayout.fxml"));
-            StackPane appPane = appLoader.load();
-            appController = appLoader.getController();
-            appController.setMainDashboardController(this);
-
-            // Set the spreadsheet data in the appController to display
-            appController.getSpreadsheetController().loadSpreadsheetFromDTO(spreadsheetManagerDTO, userPermission);
-
-            // Disable editing features if the user is not a WRITER
-            if (userPermission.equals("READER")) {
-                System.out.println("Disabling editing features for READER permission.");
-                disableEditingFeatures();
-            } else {
-                System.out.println("Permission allows editing: " + userPermission);
-            }
-
-            // Set the event handler to stop polling when the window is closed
-            sheetStage.setOnCloseRequest(event -> {
-                appController.getSpreadsheetController().stopPollingForNewVersions();
-            });
-
-            // Create a new scene and set it to the stage
-            Scene scene = new Scene(appPane);
-            sheetStage.setScene(scene);
-
-            // Show the new window
-            sheetStage.show();
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }*/
-
     private void displaySheet(SpreadsheetManagerDTO spreadsheetManagerDTO, String userPermission) {
         try {
 
@@ -350,12 +396,6 @@ public class MainDashboardController {
         }
     }
 
-
-
-
-
-
-
     public void disableEditingFeatures() {
 
         // Ensure this runs on the JavaFX Application thread
@@ -367,14 +407,16 @@ public class MainDashboardController {
         });
     }
 
-
     public DashboardTablesController getDashboardTablesController() {
         return dashboardTablesController;
     }
+
     public DashboardCommandsController getDashboardCommandsController() {
         return dashboardCommandsController;
     }
+
     public DashboardHeaderController getDashboardHeaderController() {
         return dashboardHeaderController;
     }
 }
+

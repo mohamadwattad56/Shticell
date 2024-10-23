@@ -233,50 +233,6 @@ public class CommandAndRangesController {
         popupStage.show();  // Use show() instead of showAndWait() for asynchronous updates
     }
 
-
-    private void populateCellsInRange(Set<String> cellIdsInRange, String selectedRange, Runnable onComplete) {
-        OkHttpClient client = new OkHttpClient();
-        String sheetName = this.appController.getSpreadsheetController().getSpreadsheetManagerDTO().getSpreadsheetDTO().getSheetName();
-        String url = String.format("http://localhost:8080/server_Web/getCellsInRange?selectedRange=%s&sheetName=%s", selectedRange, sheetName);
-
-        Request request = new Request.Builder()
-                .url(url)
-                .get()
-                .build();
-
-        client.newCall(request).enqueue(new Callback() {
-            @Override
-            public void onFailure(@NotNull Call call, @NotNull IOException e) {
-                Platform.runLater(() -> {
-                    System.out.println("Failed to fetch range cells: " + e.getMessage());
-                });
-            }
-
-            @Override
-            public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
-                if (response.isSuccessful()) {
-                    assert response.body() != null;
-                    String responseData = response.body().string();
-
-                    // Parse the response data as a list of strings
-                    Gson gson = new Gson();
-                    Set<String> fetchedCellsIds = gson.fromJson(responseData, new TypeToken<Set<String>>() {}.getType());
-
-                    Platform.runLater(() -> {
-                        cellIdsInRange.clear();
-                        cellIdsInRange.addAll(fetchedCellsIds);
-                        onComplete.run();  // Call the completion callback after the Set is populated
-                    });
-                } else {
-                    Platform.runLater(() -> {
-                        System.out.println("Failed to fetch range cells: " + response.message());
-                    });
-                }
-            }
-        });
-    }
-
-
     @FXML
     public void showCommandsMenu() {
         // Get the button's screen coordinates
@@ -893,7 +849,6 @@ public class CommandAndRangesController {
         return columnComboBox;
     }
 
-    // Extract columns in the range (From..To)
     private Set<String> extractColumnsInRange(String fromCell, String toCell) {
         Set<String> columns = new TreeSet<>();
         int fromCol = extractColumn(fromCell);
@@ -905,7 +860,6 @@ public class CommandAndRangesController {
         return columns;
     }
 
-    // Helper to get the columns that have already been selected
     private List<String> getSelectedColumns(VBox sortColumnsBox) {
         List<String> selectedColumns = new ArrayList<>();
         for (Node node : sortColumnsBox.getChildren()) {
@@ -920,13 +874,11 @@ public class CommandAndRangesController {
         return selectedColumns;
     }
 
-    // Get all columns in the range
     private String[] getAllColumnsInRange(String fromCell, String toCell) {
         Set<String> columns = extractColumnsInRange(fromCell, toCell);
         return columns.toArray(new String[0]);
     }
 
-    // Sorting logic, ignoring non-numeric columns
     private void performSort(String fromCell, String toCell, String[] columnsToSortBy) {
         // Extract row and column indices from the cell range
         int fromRow = extractRow(fromCell);
@@ -987,7 +939,6 @@ public class CommandAndRangesController {
         this.appController.getSpreadsheetController().showFullSpreadsheetWithSortedSection(rowsData, fromRow, toRow, fromColumn, toColumn, cellDesignMap);
     }
 
-    // Update the full spreadsheet with the sorted section
     public void updateFullSpreadsheetWithSortedSection(List<Map<String, String>> fullSpreadsheetData, List<Map<String, String>> sortedSection, int fromRow, int toRow, int fromColumn, int toColumn) {
         int sortedRowIndex = 0;
         for (int rowIndex = fromRow - 1; rowIndex < toRow; rowIndex++) {
@@ -999,7 +950,6 @@ public class CommandAndRangesController {
         }
     }
 
-    // Helper method to extract row number from cell reference (e.g., "B3" -> 3)
     private int extractRow(String cellId) {
         return Integer.parseInt(cellId.replaceAll("[A-Z]", ""));
     }
@@ -1346,6 +1296,48 @@ public class CommandAndRangesController {
         valuesListView.getItems().clear();
         Set<String> uniqueValues = extractUniqueValuesInColumn(selectedColumn, fromCell, toCell);
         valuesListView.getItems().addAll(uniqueValues);
+    }
+
+    private void populateCellsInRange(Set<String> cellIdsInRange, String selectedRange, Runnable onComplete) {
+        OkHttpClient client = new OkHttpClient();
+        String sheetName = this.appController.getSpreadsheetController().getSpreadsheetManagerDTO().getSpreadsheetDTO().getSheetName();
+        String url = String.format("http://localhost:8080/server_Web/getCellsInRange?selectedRange=%s&sheetName=%s", selectedRange, sheetName);
+
+        Request request = new Request.Builder()
+                .url(url)
+                .get()
+                .build();
+
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(@NotNull Call call, @NotNull IOException e) {
+                Platform.runLater(() -> {
+                    System.out.println("Failed to fetch range cells: " + e.getMessage());
+                });
+            }
+
+            @Override
+            public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
+                if (response.isSuccessful()) {
+                    assert response.body() != null;
+                    String responseData = response.body().string();
+
+                    // Parse the response data as a list of strings
+                    Gson gson = new Gson();
+                    Set<String> fetchedCellsIds = gson.fromJson(responseData, new TypeToken<Set<String>>() {}.getType());
+
+                    Platform.runLater(() -> {
+                        cellIdsInRange.clear();
+                        cellIdsInRange.addAll(fetchedCellsIds);
+                        onComplete.run();  // Call the completion callback after the Set is populated
+                    });
+                } else {
+                    Platform.runLater(() -> {
+                        System.out.println("Failed to fetch range cells: " + response.message());
+                    });
+                }
+            }
+        });
     }
 
     private Set<String> extractUniqueValuesInColumn(String selectedColumn, String fromCell, String toCell) {

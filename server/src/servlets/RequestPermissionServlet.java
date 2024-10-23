@@ -8,9 +8,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import Spreadsheet.impl.SpreadsheetManager;
 import java.io.IOException;
 import java.util.Map;
-
 import static constant.Constant.*;
-
 
 @WebServlet("/requestPermission")
 public class RequestPermissionServlet extends HttpServlet {
