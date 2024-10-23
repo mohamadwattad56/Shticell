@@ -132,6 +132,14 @@ public class Spreadsheet implements Serializable,Cloneable {
         return cellsInRange;
     }
 
+    public Set<String> getCellIdsInRange(String rangeName) {
+        Set<String> cellIds = ranges.get(rangeName);
+        if (cellIds == null) {
+            throw new RangeDoesNotExist("Range with name '" + rangeName + "' does not exist.");
+        }
+        return cellIds;
+    }
+
     public Map<String, Set<String>> getRanges() {
         return ranges;
     }
@@ -714,5 +722,27 @@ public class Spreadsheet implements Serializable,Cloneable {
         } catch (IOException | ClassNotFoundException e) {
             throw new RuntimeException("Error during deep copy", e);
         }
+    }
+
+    boolean isRangeUsedInCells(String rangeName) {
+        // Loop through each cell to check if it references the range
+        for (CellImpl cell : cells.values()) {
+            // Check if the cell contains a function and uses the range
+            String sourceValue = cell.getSourceValue().toString();
+
+            // If the sourceValue represents a function (SUM or AVERAGE), check if it references the range
+            if (sourceValue.startsWith("{SUM,") || sourceValue.startsWith("{AVERAGE,")) {
+                String referencedRange = extractRangeFromFunction(sourceValue);
+
+                if (referencedRange.equals(rangeName)) {
+                    return true;  // Range is used in this function
+                }
+            }
+        }
+        return false;  // Range is not used in any cells
+    }
+
+    public void removeRange(String rangeName) {
+        ranges.remove(rangeName);
     }
 }

@@ -169,11 +169,6 @@ public class HeadController {
         });
     }
 
-
-
-
-
-
     @FXML
     private void handleVersionSelector() {
         // Send a request to the server to get version history

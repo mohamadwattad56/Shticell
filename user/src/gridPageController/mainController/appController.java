@@ -109,6 +109,24 @@ public class appController {
         alert.showAndWait();
     }
 
+    public void showSuccessHint(String message) {
+        // Show a label with the success message
+        Label successLabel = new Label(message);
+        successLabel.setStyle("-fx-background-color: green; -fx-text-fill: white; -fx-padding: 10;");
+        successLabel.setVisible(true);
+
+        // Add the label to your UI, assuming there's a Pane or some container for this
+        getMainDashboardController().getMainLayout().getChildren().add(successLabel);
+
+        // Fade the label out after a few seconds
+        FadeTransition fadeTransition = new FadeTransition(Duration.seconds(3), successLabel);
+        fadeTransition.setFromValue(1.0);
+        fadeTransition.setToValue(0.0);
+        fadeTransition.setOnFinished(event -> successLabel.setVisible(false));
+
+        fadeTransition.play();
+    }
+
     public void changeSkin(String skin) {
         this.currentSkin = skin;  // Update the current skin
         String buttonClass;

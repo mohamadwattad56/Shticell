@@ -1,4 +1,6 @@
 package gridPageController.CommandRangesController;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import dto.CellDTO;
 import gridPageController.mainController.appController;
 import javafx.animation.FadeTransition;
@@ -15,7 +17,14 @@ import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import javafx.util.Duration;
+import okhttp3.*;
+import org.jetbrains.annotations.NotNull;
+
+import java.io.IOException;
 import java.util.*;
+import java.util.function.Consumer;
+
+import static constant.Constant.SHEET_NAME;
 
 public class CommandAndRangesController {
 
@@ -130,46 +139,58 @@ public class CommandAndRangesController {
         VBox popupLayout = new VBox(10);
         popupLayout.setPadding(new Insets(20));
 
+        // ComboBox to select the range
         ComboBox<String> rangeComboBox = new ComboBox<>();
         rangeComboBox.setPromptText("Select range");
-        rangeComboBox.getItems().addAll(appController.getSpreadsheetController().getSpreadsheet().getAllRangeNames());
+        fetchRangeNamesAndPopulateComboBox(rangeComboBox);
 
+        // Delete button starts disabled
         Button deleteButton = new Button("Delete");
         deleteButton.setDisable(true);
 
+        // Enable the delete button only if a range is selected
         rangeComboBox.setOnAction(event -> deleteButton.setDisable(rangeComboBox.getValue() == null));
 
+        // Delete action
         deleteButton.setOnAction(event -> {
             String selectedRange = rangeComboBox.getValue();
 
+            // Confirmation dialog
             Alert confirmationDialog = new Alert(Alert.AlertType.CONFIRMATION);
             confirmationDialog.setTitle("Confirm Delete");
             confirmationDialog.setHeaderText("Are you sure you want to delete the range: " + selectedRange + "?");
 
             Optional<ButtonType> result = confirmationDialog.showAndWait();
-            try{
-                if (result.isPresent() && result.get() == ButtonType.OK) {
-                    boolean isDeleted = appController.getSpreadsheetController().getSpreadsheet().deleteRange(selectedRange);
+            if (result.isPresent() && result.get() == ButtonType.OK) {
+                // Call deleteRangeRequest and pass a callback to handle the result
+                deleteRangeRequest(selectedRange, isDeleted -> {
                     if (isDeleted) {
-                        popupStage.close(); // Close the delete range popup
+                        appController.showSuccessHint("Range deleted successfully.");  // Success feedback
+                        popupStage.close();  // Close the popup on success
                     } else {
-                        appController.showError("Error", "Could not delete the range.");
+                        appController.showError("Error", "Range '" + selectedRange + "' is used by one or more cells and cannot be deleted.");  // Show error feedback
                     }
-                } else {
-                    confirmationDialog.close();
-                }
-            }catch (Exception e)
-            {
-                appController.showError("Error", "Could not delete the range : " + e.getMessage());
+                });
+            } else {
+                confirmationDialog.close();  // Close the confirmation dialog if the user cancels
             }
         });
 
+        // Cancel button
         Button cancelButton = new Button("Cancel");
         cancelButton.setOnAction(event -> popupStage.close());
 
-        popupLayout.getChildren().addAll(new Label("Select range to delete:"), rangeComboBox, new HBox(10, cancelButton, deleteButton));
+        // Add UI components to the layout
+        popupLayout.getChildren().addAll(
+                new Label("Select range to delete:"),
+                rangeComboBox,
+                new HBox(10, cancelButton, deleteButton)
+        );
+
+        // Create and show the popup
         Scene popupScene = new Scene(popupLayout, 300, 200);
         popupStage.setScene(popupScene);
+
         popupStage.showAndWait();
     }
 
@@ -183,7 +204,7 @@ public class CommandAndRangesController {
 
         ComboBox<String> rangeComboBox = new ComboBox<>();
         rangeComboBox.setPromptText("Select range");
-        rangeComboBox.getItems().addAll(appController.getSpreadsheetController().getSpreadsheet().getAllRangeNames());
+        fetchRangeNamesAndPopulateComboBox(rangeComboBox);  // Assuming this populates the ComboBox
 
         Button displayButton = new Button("Display");
         displayButton.setDisable(true);
@@ -192,14 +213,15 @@ public class CommandAndRangesController {
 
         displayButton.setOnAction(event -> {
             String selectedRange = rangeComboBox.getValue();
-            Set<String> cellIdsInRange = appController.getSpreadsheetController().getSpreadsheet().getRangeCells(selectedRange);
-
-            if (cellIdsInRange != null) {
-                appController.getSpreadsheetController().highlightCellsInRange(cellIdsInRange);
-                popupStage.close();
-            } else {
-                appController.showError("", "No range found for the selected range: " + selectedRange);
-            }
+            Set<String> cellIdsInRange = new HashSet<>();
+            populateCellsInRange(cellIdsInRange, selectedRange, () -> {
+                if (!cellIdsInRange.isEmpty()) {
+                    appController.getSpreadsheetController().highlightCellsInRange(cellIdsInRange);
+                    popupStage.close();
+                } else {
+                    appController.showError("", "No range found for the selected range: " + selectedRange);
+                }
+            });
         });
 
         Button cancelButton = new Button("Cancel");
@@ -208,8 +230,52 @@ public class CommandAndRangesController {
         popupLayout.getChildren().addAll(new Label("Select range to display:"), rangeComboBox, new HBox(10, cancelButton, displayButton));
         Scene popupScene = new Scene(popupLayout, 300, 200);
         popupStage.setScene(popupScene);
-        popupStage.showAndWait();
+        popupStage.show();  // Use show() instead of showAndWait() for asynchronous updates
     }
+
+
+    private void populateCellsInRange(Set<String> cellIdsInRange, String selectedRange, Runnable onComplete) {
+        OkHttpClient client = new OkHttpClient();
+        String sheetName = this.appController.getSpreadsheetController().getSpreadsheetManagerDTO().getSpreadsheetDTO().getSheetName();
+        String url = String.format("http://localhost:8080/server_Web/getCellsInRange?selectedRange=%s&sheetName=%s", selectedRange, sheetName);
+
+        Request request = new Request.Builder()
+                .url(url)
+                .get()
+                .build();
+
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(@NotNull Call call, @NotNull IOException e) {
+                Platform.runLater(() -> {
+                    System.out.println("Failed to fetch range cells: " + e.getMessage());
+                });
+            }
+
+            @Override
+            public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
+                if (response.isSuccessful()) {
+                    assert response.body() != null;
+                    String responseData = response.body().string();
+
+                    // Parse the response data as a list of strings
+                    Gson gson = new Gson();
+                    Set<String> fetchedCellsIds = gson.fromJson(responseData, new TypeToken<Set<String>>() {}.getType());
+
+                    Platform.runLater(() -> {
+                        cellIdsInRange.clear();
+                        cellIdsInRange.addAll(fetchedCellsIds);
+                        onComplete.run();  // Call the completion callback after the Set is populated
+                    });
+                } else {
+                    Platform.runLater(() -> {
+                        System.out.println("Failed to fetch range cells: " + response.message());
+                    });
+                }
+            }
+        });
+    }
+
 
     @FXML
     public void showCommandsMenu() {
@@ -368,6 +434,46 @@ public class CommandAndRangesController {
 
         // Add items to the context menu
         commandsMenu.getItems().addAll(setColumnOrRowsWidth, alignText, setCellDesign, resetCellDesign, sortOption,filterOption,barGraphOption);
+    }
+
+    private void fetchRangeNamesAndPopulateComboBox(ComboBox<String> rangeComboBox) {
+        OkHttpClient client = new OkHttpClient();
+        String url = "http://localhost:8080/server_Web/getRangeNames?sheetName=" + this.appController.getSpreadsheetController().getSpreadsheetManagerDTO().getSpreadsheetDTO().getSheetName();
+
+        Request request = new Request.Builder()
+                .url(url)
+                .get()
+                .build();
+
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                Platform.runLater(() -> {
+                    System.out.println("Failed to fetch range names: " + e.getMessage());
+                });
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                if (response.isSuccessful()) {
+                    String responseData = response.body().string();
+
+                    // Parse the response data as a list of strings
+                    Gson gson = new Gson();
+                    List<String> fetchedRangeNames = gson.fromJson(responseData, new TypeToken<List<String>>() {}.getType());
+
+                    Platform.runLater(() -> {
+                        // Clear the ComboBox before populating it
+                        rangeComboBox.getItems().clear();
+                        rangeComboBox.getItems().addAll(fetchedRangeNames);
+                    });
+                } else {
+                    Platform.runLater(() -> {
+                        System.out.println("Failed to fetch range names: " + response.message());
+                    });
+                }
+            }
+        });
     }
 
     private void showGraphPopup() {
@@ -681,7 +787,6 @@ public class CommandAndRangesController {
                 (int) (color.getGreen() * 255),
                 (int) (color.getBlue() * 255));
     }
-
 
     private void showSortPopup() {
         Stage sortPopupStage = new Stage();
@@ -1301,21 +1406,95 @@ public class CommandAndRangesController {
             String fromCellId = fromComboBox.getValue();
             String toCellId = toComboBox.getValue();
 
-            // Send request to server to add range
-            boolean isAdded = appController.getSpreadsheetController().getSpreadsheet().addRange(rangeName, fromCellId, toCellId);
-
-            if (!isAdded) {
-                rangeErrorLabel.setVisible(true);
-            } else {
-                rangeErrorLabel.setVisible(false);
-                popupStage.close(); // Successfully added range, close the popup
-            }
+            // Call the servlet to add the range
+            addRangeRequest(rangeName, fromCellId, toCellId, isAdded -> {
+                if (!isAdded) {
+                    rangeErrorLabel.setVisible(true);  // Show error if adding failed
+                } else {
+                    rangeErrorLabel.setVisible(false);
+                    popupStage.close();  // Successfully added range, close the popup
+                }
+            });
         });
 
         popupLayout.getChildren().addAll(rangeNameLabel, rangeNameInput, rangeErrorLabel, fromLabel, fromComboBox, toLabel, toComboBox, new HBox(10, cancelButton, addButton));
         Scene popupScene = new Scene(popupLayout, 300, 500);
         popupStage.setScene(popupScene);
         popupStage.showAndWait();
+    }
+
+    private void addRangeRequest(String rangeName, String fromCellId, String toCellId, Consumer<Boolean> callback) {
+        OkHttpClient client = new OkHttpClient();
+        String url = "http://localhost:8080/server_Web/addRange";  // Update this with your servlet URL
+
+        // Build the request body
+        RequestBody requestBody = new FormBody.Builder()
+                .add("rangeName", rangeName)
+                .add("fromCellId", fromCellId)
+                .add("toCellId", toCellId)
+                .add(SHEET_NAME, this.appController.getSpreadsheetController().getSpreadsheetManagerDTO().getSpreadsheetDTO().getSheetName())
+                .build();
+
+        // Build the request
+        Request request = new Request.Builder()
+                .url(url)
+                .post(requestBody)
+                .build();
+
+        // Send the request asynchronously
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                Platform.runLater(() -> {
+                    System.out.println("Failed to add range: " + e.getMessage());
+                    callback.accept(false); // Call the callback with false (indicating failure)
+                });
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                boolean isAdded = response.isSuccessful();
+                Platform.runLater(() -> {
+                    callback.accept(isAdded);  // Call the callback with the result
+                });
+            }
+        });
+    }
+
+    private void deleteRangeRequest(String rangeName, Consumer<Boolean> callback) {
+        OkHttpClient client = new OkHttpClient();
+        String url = "http://localhost:8080/server_Web/deleteRange";  // Update this with your servlet URL
+
+        // Build the request body
+        RequestBody requestBody = new FormBody.Builder()
+                .add("rangeName", rangeName)
+                .add(SHEET_NAME, this.appController.getSpreadsheetController().getSpreadsheetManagerDTO().getSpreadsheetDTO().getSheetName())
+                .build();
+
+        // Build the request
+        Request request = new Request.Builder()
+                .url(url)
+                .post(requestBody)
+                .build();
+
+        // Send the request asynchronously
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                Platform.runLater(() -> {
+                    System.out.println("Failed to delete range: " + e.getMessage());
+                    callback.accept(false); // Call the callback with false (indicating failure)
+                });
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                boolean isDeleted = response.isSuccessful();
+                Platform.runLater(() -> {
+                    callback.accept(isDeleted);  // Call the callback with the result
+                });
+            }
+        });
     }
 
     private void validateRangeSelections(ComboBox<String> fromColumn, ComboBox<String> toColumn, Button addButton) {

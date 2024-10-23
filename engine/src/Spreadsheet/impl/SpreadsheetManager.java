@@ -18,6 +18,10 @@ public class SpreadsheetManager implements Engine, Cloneable {
     private final List<PermissionRequestDTO> processedRequests = new ArrayList<>();  // Processed (approved/denied) requests
     private final List<PermissionRequestDTO> pendingRequests = new ArrayList<>();  // Pending permission requests
 
+    public Set<String> getRangeNames() {
+        return currentSpreadsheet.getAllRangeNames();
+    }
+
     public enum Permission {
         OWNER, READER, WRITER, NONE
 
@@ -235,6 +239,78 @@ public class SpreadsheetManager implements Engine, Cloneable {
         }
     }
 
+    public boolean addRange(String rangeName, String fromCellId, String toCellId) {
+        if (currentSpreadsheet.getAllRangeNames().contains(rangeName)) {
+            return false; // Range with the same name already exists
+        }
+
+        Set<String> cellsInRange = new HashSet<>(calculateRangeCells(fromCellId, toCellId));
+        currentSpreadsheet.getRanges().put(rangeName, cellsInRange);
+        return true;
+    }
+
+    public boolean deleteRange(String rangeName) {
+        if (currentSpreadsheet.getAllRangeNames().contains(rangeName)) {
+            // Ensure no cells depend on this range before deleting
+            if (currentSpreadsheet.isRangeUsedInCells(rangeName)) {
+                throw new IllegalArgumentException("Range '" + rangeName + "' is used by one or more cells and cannot be deleted.");
+            }
+
+            // Remove the range
+            currentSpreadsheet.removeRange(rangeName);
+            return true;
+        }
+        return false; // Range not found
+    }
+
+    public Set<String> calculateRangeCells(String fromCellId, String toCellId) {
+        Set<String> cellIds = new HashSet<>();
+
+        // Extract row and column information from the provided cell IDs
+        int fromRow = extractRow(fromCellId);
+        int fromCol = extractCol(fromCellId);  // Column is extracted as an integer (A=1, B=2, etc.)
+        int toRow = extractRow(toCellId);
+        int toCol = extractCol(toCellId);
+
+        // Ensure we process the range in the correct order (smallest to largest)
+        int startRow = Math.min(fromRow, toRow);
+        int endRow = Math.max(fromRow, toRow);
+        int startCol = Math.min(fromCol, toCol);
+        int endCol = Math.max(fromCol, toCol);
+
+        // Iterate over the rows and columns within the range
+        for (int row = startRow; row <= endRow; row++) {
+            for (int col = startCol; col <= endCol; col++) {
+                // Convert the column index back to a letter (A, B, C, etc.)
+                String columnName = Character.toString((char) ('A' + col - 1));
+                String cellId = generateCellId(row, columnName);  // Generate the cell ID using the existing method
+
+                // Ensure the cell is within bounds before adding it to the set
+                if (isWithinBounds(cellId)) {
+                    cellIds.add(cellId);
+                } else {
+                    throw new OutOfBoundsException(String.format("Cell %s is out of bounds.", cellId));
+                }
+            }
+        }
+
+        return cellIds;
+    }
+
+    private String generateCellId(int row, String column) {
+        return column.toUpperCase() + row;
+    }
+
+    private int extractRow(String cellId) {
+        String rowPart = cellId.replaceAll("[^0-9]", "");
+        return Integer.parseInt(rowPart);
+    }
+
+    private int extractCol(String cellId) {
+        String colPart = cellId.replaceAll("[0-9]", "").toUpperCase();
+        return colPart.chars().reduce(0, (acc, ch) -> acc * 26 + (ch - 'A' + 1));
+    }
+
     private void checkUniqueRangeNames() {
         Set<String> rangeNames = new HashSet<>();
         for (Map.Entry<String, Set<String>> entry : currentSpreadsheet.getRanges().entrySet()) {
@@ -285,6 +361,10 @@ public class SpreadsheetManager implements Engine, Cloneable {
 
     private boolean isRange(String value) {
         return value.matches("[A-Z]+[0-9]+:[A-Z]+[0-9]+");
+    }
+
+    public Set<String> getCellIdsInRange(String rangeName){
+       return currentSpreadsheet.getCellIdsInRange(rangeName);
     }
 
     private boolean isWithinBounds(String cellId) {

@@ -50,11 +50,6 @@ public class SpreadsheetController implements Serializable {
     private boolean isPolling = false;
 
 
-    public SpreadsheetManagerDTO getSpreadsheetManagerDTO() {
-        return spreadsheetManagerDTO;
-    }
-
-
     static {
         functionArgCounts.put("PLUS", 2);
         functionArgCounts.put("MINUS", 2);
@@ -122,7 +117,6 @@ public class SpreadsheetController implements Serializable {
                 String cellClass = this.appController.getCellClassForCurrentSkin();
 
 
-
                 // Populate the grid with data cells from the DTO
                 for (int row = 1; row <= numberOfRows; row++) {
                     for (int col = 1; col <= numberOfColumns; col++) {
@@ -172,12 +166,9 @@ public class SpreadsheetController implements Serializable {
         });
     }
 
-
-
-
     private void SetMainContainerSize(double columnWidth, int numberOfColumns, double rowHeight, int numberOfRows) {
-        appController.getMainContainer().setPrefHeight(Double.max(Main_Header_Height + columnWidth * (numberOfColumns + Header_Row_And_Column),appController.getMainContainer().getPrefHeight()));
-        appController.getMainContainer().setPrefWidth(Double.max(CommandAndRanges_Section + rowHeight * (numberOfRows + Header_Row_And_Column),appController.getMainContainer().getPrefHeight()));
+        appController.getMainContainer().setPrefHeight(Double.max(Main_Header_Height + columnWidth * (numberOfColumns + Header_Row_And_Column), appController.getMainContainer().getPrefHeight()));
+        appController.getMainContainer().setPrefWidth(Double.max(CommandAndRanges_Section + rowHeight * (numberOfRows + Header_Row_And_Column), appController.getMainContainer().getPrefHeight()));
     }
 
     private void ColumnsAndRowsConstraints(int numberOfColumns, double columnWidth, int numberOfRows, double rowHeight) {
@@ -258,9 +249,6 @@ public class SpreadsheetController implements Serializable {
         }
     }
 
-
-
-
     private void handleCellClick(String cellIdentifier, String userPermission) {
 
         // First, clear all existing highlights except for the first column and row
@@ -328,7 +316,9 @@ public class SpreadsheetController implements Serializable {
         }
     }
 
-
+    public SpreadsheetManagerDTO getSpreadsheetManagerDTO() {
+        return spreadsheetManagerDTO;
+    }
 
     private boolean isDefaultColors(String backgroundColor, String textColor) {
         return (backgroundColor.equalsIgnoreCase("white") || backgroundColor.equalsIgnoreCase("#FFFFFF")) &&
@@ -353,7 +343,6 @@ public class SpreadsheetController implements Serializable {
                 "; -fx-border-color: #000000; -fx-background-color: " + convertToValidHex(backgroundColor) + ";");
     }
 
-
     private void highlightCell(String cellIdentifier, String highlightClass) {
         for (Node node : spreadsheetGrid.getChildren()) {
             if (GridPane.getColumnIndex(node) != null && GridPane.getRowIndex(node) != null) {
@@ -373,8 +362,6 @@ public class SpreadsheetController implements Serializable {
             }
         }
     }
-
-
 
     private void showFunctionInputPopup(TextField originalCellValueField) {
         Stage popupStage = new Stage();
@@ -458,7 +445,6 @@ public class SpreadsheetController implements Serializable {
         popupStage.showAndWait();
     }
 
-
     // Updated method to handle manual value vs function input
     private void updatePreviewLabel(Label previewLabel, String inputValue, Node[] argumentFields, boolean isFunction) {
         StringBuilder functionString = new StringBuilder();
@@ -484,8 +470,6 @@ public class SpreadsheetController implements Serializable {
         // Pass the functionString and previewLabel to the calculateLivePreview method
         calculateLivePreview(functionString.toString(), previewLabel);
     }
-
-
 
     private void calculateLivePreview(String functionString, Label previewLabel) {
         try {
@@ -526,8 +510,6 @@ public class SpreadsheetController implements Serializable {
             previewLabel.setText("Error");
         }
     }
-
-
 
     public void showError(String title, String message) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
@@ -713,7 +695,6 @@ public class SpreadsheetController implements Serializable {
         return new TextField[]{arg1Field, arg2Field, arg3Field};
     }
 
-
     public void setHeadController(HeadController headController) {
         this.headController = headController;
     }
@@ -813,44 +794,6 @@ public class SpreadsheetController implements Serializable {
         return future;  // Return the future to be handled in the calling method
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
-    /*
-    private void refreshCellAndDependents(String cellIdentifier) {
-        // Refresh the value of the cell
-        String updatedValue = spreadsheetManagerDTO.getCellDTO(cellIdentifier).getEffectiveValue().toString();
-        String formattedValue = formatCellValue(updatedValue);
-        for (Node node : spreadsheetGrid.getChildren()) {
-            if (GridPane.getColumnIndex(node) != null && GridPane.getRowIndex(node) != null) {
-                int rowIndex = GridPane.getRowIndex(node);
-                int columnIndex = GridPane.getColumnIndex(node);
-                String currentCellId = getCellIdFromCoordinates(rowIndex, columnIndex);
-                if (currentCellId.equals(cellIdentifier)) {
-                    if (node instanceof Label) {
-                        ((Label) node).setText(formattedValue);
-                    }
-                    break;
-                }
-            }
-        }
-
-        // Find and refresh dependents recursively
-        List<String> dependents = spreadsheetManagerDTO.getCellDTO(cellIdentifier).getDependents();
-        for (String dependentCellId : dependents) {
-            refreshCellAndDependents(dependentCellId); // Recursive call to refresh each dependent cell
-        }
-    }
-*/
     public void refreshCellAndDependents(String cellIdentifier) throws UnsupportedEncodingException {
         // Send request to server to fetch updated cell value and dependents
         OkHttpClient client = new OkHttpClient();
@@ -902,61 +845,6 @@ public class SpreadsheetController implements Serializable {
         });
     }
 
-
-
-    /*public void refreshTempCellAndDependents(String cellIdentifier) throws UnsupportedEncodingException {
-        // Send request to server to fetch updated cell value and dependents from the temporary sheet
-        OkHttpClient client = new OkHttpClient();
-
-        // Include userName (current user viewing the temporary sheet) in the request
-        String userName = appController.getSpreadsheetController().spreadsheetManagerDTO.getCurrentUserName();
-
-        // Construct the URL with query parameters, including the userName
-        String url = String.format(
-                "http://localhost:8080/server_Web/getTempCellUpdate?cellId=%s&sheetName=%s&userName=%s",  // Use the new servlet path
-                URLEncoder.encode(cellIdentifier, "UTF-8"),
-                URLEncoder.encode(spreadsheetManagerDTO.getSpreadsheetDTO().getSheetName(), "UTF-8"),
-                URLEncoder.encode(userName, "UTF-8")
-        );
-
-        Request request = new Request.Builder()
-                .url(url)
-                .get()
-                .build();
-
-        client.newCall(request).enqueue(new Callback() {
-            @Override
-            public void onFailure(@NotNull Call call, IOException e) {
-                Platform.runLater(() -> appController.showError("Error", "Failed to fetch temporary cell updates."));
-            }
-
-            @Override
-            public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
-                String responseData = response.body().string();
-
-                // Log the raw response data from the server
-
-                Platform.runLater(() -> {
-                    Gson gson = new Gson();
-                    try {
-                        // Deserialize the server's response
-                        CellUpdateDTO cellUpdateDTO = gson.fromJson(responseData, CellUpdateDTO.class);
-
-                        // Refresh the cell and dependents based on the updated data received from the server
-                        updateCellInGrid(cellUpdateDTO.getUpdatedCell());
-                        for (CellDTO dependentCell : cellUpdateDTO.getDependentCells()) {
-                            refreshTempCellAndDependents(dependentCell.getCellId());  // Continue refreshing dependents
-                        }
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                });
-            }
-        });
-    }*/
-
-
-
     public void updateCellInClientDTO(CellDTO updatedCell, List<CellDTO> dependentCells, String lastModifiedBy) {
         // Update the cell in the client-side DTO
         for (CellDTO cell : spreadsheetManagerDTO.getSpreadsheetDTO().getCells()) {
@@ -989,8 +877,6 @@ public class SpreadsheetController implements Serializable {
         }
     }
 
-
-    // Same as before, update the UI for the specific cell in the grid
     private void updateCellInGrid(CellDTO updatedCell) {
         String currentCellId = updatedCell.getCellId();
         Node cellNode = getCellNodeById(currentCellId);
@@ -1045,9 +931,6 @@ public class SpreadsheetController implements Serializable {
 
     }
 
-
-
-
     public void startPollingForNewVersions() {
         if (isPolling) return;  // Prevent multiple polling sessions
         if (spreadsheetManagerDTO == null) {
@@ -1066,7 +949,6 @@ public class SpreadsheetController implements Serializable {
             }
         }, 0, 10, TimeUnit.SECONDS);  // Poll every 10 seconds
     }
-
 
     public void stopPollingForNewVersions() {
         if (scheduler != null && !scheduler.isShutdown()) {
@@ -1108,14 +990,6 @@ public class SpreadsheetController implements Serializable {
         });
     }
 
-
-
-
-
-
-
-
-
     public String getCellIdFromCoordinates(int row, int column) {
         char columnLetter = (char) ('A' + (column - 1));
         return String.valueOf(columnLetter) + row;
@@ -1125,15 +999,13 @@ public class SpreadsheetController implements Serializable {
         int columnIndex = columnLetter.charAt(0) - 'A' + 1;  // Convert column letter to column index
 
         for (Node node : spreadsheetGrid.getChildren()) {
-            if (GridPane.getColumnIndex(node) != null && GridPane.getColumnIndex(node) == columnIndex && GridPane.getRowIndex(node)!=0) {
+            if (GridPane.getColumnIndex(node) != null && GridPane.getColumnIndex(node) == columnIndex && GridPane.getRowIndex(node) != 0) {
                 if (node instanceof Label) {
                     ((Label) node).setAlignment(alignment);  // Set the alignment
                 }
             }
         }
     }
-
-
 
     public GridPane getGridPane() {
         return this.spreadsheetGrid;
@@ -1162,13 +1034,11 @@ public class SpreadsheetController implements Serializable {
         }
         //  spreadsheetGrid.setAlignment(Pos.TOP_LEFT);  // Ensure it doesn't grow to the left
         //  spreadsheetGrid.setAlignment(Pos.TOP_CENTER);
-        appController.getMainContainer().setPrefWidth((this.appController.getMainContainer().getWidth())-oldWidth+newWidth);
+        appController.getMainContainer().setPrefWidth((this.appController.getMainContainer().getWidth()) - oldWidth + newWidth);
         // Force the layout to refresh
         spreadsheetGrid.applyCss(); // Force CSS recalculation
         spreadsheetGrid.layout();   // Force layout update
     }
-
-
 
     public void applyHeightToRow(int rowIndex, double newHeight) {
         double oldHeight = spreadsheetGrid.getRowConstraints().get(rowIndex).getPrefHeight();
@@ -1203,23 +1073,6 @@ public class SpreadsheetController implements Serializable {
         spreadsheetGrid.layout();   // Force layout update
     }
 
-
-  /*  public void applyHeightToAllRows(double newHeight) {
-        for (int i = 1; i < spreadsheetGrid.getRowConstraints().size(); i++) {  // Skip row 0 if it's the header
-            applyHeightToRow(i, newHeight);  // Call the function that applies height to a specific row
-        }
-    }
-
-
-    public void applyWidthToAllColumns(double newWidth) {
-        for (int i = 1; i < spreadsheetGrid.getColumnConstraints().size(); i++) {  // Skip column 0 if it's the header
-            String columnLetter = String.valueOf((char) ('A' + (i - 1)));  // Convert index to column letter
-            applyWidthToColumn(columnLetter, newWidth);  // Call the function that applies width to a specific column
-        }
-    }
-*/
-
-
     private Node getNodeFromGridPane(GridPane gridPane, int col, int row) {
         for (Node node : gridPane.getChildren()) {
             if (GridPane.getColumnIndex(node) == col && GridPane.getRowIndex(node) == row) {
@@ -1228,8 +1081,6 @@ public class SpreadsheetController implements Serializable {
         }
         return null;
     }
-
-
 
     public void setMainController(appController appController) {
         this.appController = appController;
@@ -1254,7 +1105,7 @@ public class SpreadsheetController implements Serializable {
                     // If the cell is part of the range, highlight it
                     if (cellIdsInRange.contains(cellId)) {
                         node.setStyle("-fx-background-color: lightgreen; -fx-border-color: black; -fx-padding: 5px;");
-                    } else if (colIndex != 0 && rowIndex != 0){
+                    } else if (colIndex != 0 && rowIndex != 0) {
                         // Reset the style for non-range cells
                         node.setStyle("-fx-background-color: white; -fx-border-color: black; -fx-padding: 5px;");
                     }
@@ -1263,22 +1114,16 @@ public class SpreadsheetController implements Serializable {
         }
     }
 
-
-
-    // Convert JavaFX Color to AWT Color
     public static java.awt.Color toAwtColor(javafx.scene.paint.Color fxColor) {
         return new java.awt.Color((float) fxColor.getRed(), (float) fxColor.getGreen(), (float) fxColor.getBlue(), (float) fxColor.getOpacity());
     }
 
-    // Converts javafx.scene.paint.Color to a valid hex code (without alpha channel)
     private String toRgbCode(javafx.scene.paint.Color color) {
         return String.format("#%02X%02X%02X",
-                (int)(color.getRed() * 255),
-                (int)(color.getGreen() * 255),
-                (int)(color.getBlue() * 255));
+                (int) (color.getRed() * 255),
+                (int) (color.getGreen() * 255),
+                (int) (color.getBlue() * 255));
     }
-
-
 
     public void applyCellTextColor(String cellId, String textColor) {
         Node cellNode = getCellNodeById(cellId);
@@ -1301,8 +1146,6 @@ public class SpreadsheetController implements Serializable {
         spreadsheetManagerDTO.setCellBackgroundColor(cellId, backgroundColor);
     }
 
-
-    // Reset the formatting of a cell
     public void resetCellFormatting(String cellId) {
         // Get the cell's node in the grid
         Node cellNode = getCellNodeById(cellId);
@@ -1316,7 +1159,6 @@ public class SpreadsheetController implements Serializable {
         }
     }
 
-
     private Node getCellNodeById(String cellId) {
         for (Node node : spreadsheetGrid.getChildren()) {
             if (GridPane.getColumnIndex(node) != null && GridPane.getRowIndex(node) != null) {
@@ -1329,8 +1171,6 @@ public class SpreadsheetController implements Serializable {
         return null; // Return null if no matching cell is found
     }
 
-
-    // Helper method to get all rows in the spreadsheet
     public List<Map<String, String>> getAllRowsInSpreadsheet() {
         int numRows = spreadsheetManagerDTO.getNumOfRows();
         int numCols = appController.getSpreadsheetController().getSpreadsheet().getNumOfColumns();
@@ -1366,7 +1206,6 @@ public class SpreadsheetController implements Serializable {
         fullSpreadsheetGrid.setGridLinesVisible(true);
         fullSpreadsheetGrid.setHgap(2);
         fullSpreadsheetGrid.setVgap(2);
-
 
 
         int numberOfRows = appController.getSpreadsheetController().getSpreadsheet().getNumOfRows();
@@ -1474,7 +1313,6 @@ public class SpreadsheetController implements Serializable {
         }
     }
 
-
     public void disableEditing() {
         // Disable grid editing but leave header editable for non-READERS
         for (Node node : spreadsheetGrid.getChildren()) {
@@ -1485,6 +1323,4 @@ public class SpreadsheetController implements Serializable {
 
 
     }
-
 }
-
